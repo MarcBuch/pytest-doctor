@@ -11,13 +11,37 @@ This project uses `uv` for dependency and environment management.
 ```bash
 # Install dependencies and set up the virtual environment
 uv sync
+```
 
+### Standard Developer Commands
+
+The following commands are the primary workflows for development:
+
+```bash
 # Run tests
 uv run pytest
 
-# Run linting and type checking
+# Run linting (check code style, imports, and common issues)
 uv run ruff check .
+
+# Run type checking
 uv run mypy src
+
+# Run coverage analysis
+uv run coverage run -m pytest && uv run coverage report
+
+# Format code (auto-fix style issues)
+uv run ruff format .
+```
+
+### Useful Aliases
+
+You can add these to your shell profile for convenience:
+```bash
+alias pytest-doctor-lint="uv run ruff check ."
+alias pytest-doctor-type="uv run mypy src"
+alias pytest-doctor-test="uv run pytest"
+alias pytest-doctor-coverage="uv run coverage run -m pytest && uv run coverage report"
 ```
 
 ### Project Structure
