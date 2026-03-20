@@ -1,3 +1,7 @@
-"""Scoring and metrics calculation modules."""
+"""Scoring and metrics calculation modules.
 
-__all__ = []
+This module provides scoring logic for test quality metrics
+and diagnostic results aggregation.
+"""
+
+__all__ = ["scorer", "metrics"]
