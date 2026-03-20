@@ -2,7 +2,7 @@
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for system overview.
 
-pytest-doctor includes 40+ diagnostic rules across 7 categories to ensure high-quality test suites.
+pytest-doctor reports diagnostic categories aligned with the minimal, tool-backed architecture to ensure high-quality test suites.
 
 ## Rule Categories
 

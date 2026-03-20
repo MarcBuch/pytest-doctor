@@ -9,7 +9,7 @@ Created: March 20, 2026
 | **README.md** | 13KB | Master Index | Navigation hub, references all docs |
 | **OVERVIEW.md** | 5.1KB | Introduction | Quick start, feature overview |
 | **ARCHITECTURE.md** | 14KB | System Design | Component architecture, data flow |
-| **RULES.md** | 16KB | Diagnostic Rules | 40+ quality checks (7 categories) |
+| **RULES.md** | 16KB | Diagnostic Rules | Tool-backed diagnostic categories and guidance |
 | **GAP_DETECTION.md** | 11KB | Coverage Gaps | Untested functions, branches, exceptions |
 | **EDGE_CASES.md** | 13KB | Edge Cases | Boundary values, special inputs |
 | **SCORING.md** | 9.0KB | Score Calculation | 0-100 health score algorithm |
@@ -17,21 +17,19 @@ Created: March 20, 2026
 | **API.md** | 11KB | Python API | Programmatic usage, examples |
 | **CONFIG.md** | 9.7KB | Configuration | Config file options, env vars |
 | **LLM_AGENTS.md** | 13KB | Agent Integration | Workflows for AI agents |
+| **MIGRATION_TO_MINIMAL_ARCHITECTURE.md** | - | Migration | Legacy-to-minimal mapping and rollout |
 
 **Total: 122 KB of comprehensive documentation**
 
 ## 🎯 Key Features Documented
 
-### 1. Test Quality Analysis (40+ Rules)
-- Structure: Naming, organization, docstrings
-- Assertions: Message presence, clarity, type checking
-- Fixtures: Usage, scope, dependencies, state
-- Mocking: Specs, patches, assertions
-- Performance: Speed, parametrization, setup
-- Maintainability: Duplication, clarity, dependencies
-- Coverage: Metrics and thresholds
+### 1. Minimal Tool-Backed Analysis
+- Lint/quality diagnostics via Ruff and pytest-oriented lint checks
+- Coverage and branch metrics via coverage.py
+- Dead code and dead fixture signals via vulture and pytest-deadfixtures
+- Complexity hotspots via radon
 
-### 2. Gap Detection (6 Types)
+### 2. Gap Detection
 - **Untested Functions** - 0% coverage functions
 - **Uncovered Branches** - If/else/except paths not exercised
 - **Missing Exception Tests** - Exceptions raised but not tested
@@ -39,7 +37,7 @@ Created: March 20, 2026
 - **Partial Coverage** - Some code paths untested
 - **Dead Test Code** - Unreachable test code
 
-### 3. Edge Case Detection (7 Categories)
+### 3. Edge Case Guidance
 - **Numeric**: Zero, negative, overflow, NaN, precision
 - **Collections**: Empty, single, duplicates, large
 - **Strings**: Empty, unicode, special chars, very long
@@ -99,14 +97,10 @@ See [SCORING.md](./SCORING.md) for how rules affect score.
 
 ## 📋 Content Highlights
 
-### Complete Rule Reference
-- 37 diagnostic rules across 7 categories
-- Each rule documented with:
-  - Severity level
-  - Category
-  - ✅ Good examples
-  - ❌ Bad examples
-  - Explanations
+### Rule and Diagnostic Reference
+- Tool-generated diagnostics normalized to one schema
+- Severity level and category mapping
+- Practical examples and remediation guidance
 
 Example from RULES.md:
 ```markdown
@@ -189,11 +183,10 @@ Example from GAP_DETECTION.md:
 
 ## 📊 Documentation Statistics
 
-- **11 markdown files** comprehensively covering all aspects
-- **40+ diagnostic rules** fully documented with examples
-- **6 gap types** with detailed detection strategies
-- **7 edge case categories** with concrete examples
-- **50+ code examples** showing good/bad patterns
+- **11 markdown files** covering architecture, usage, and integration
+- **Minimal architecture** focused on pass orchestration + adapters
+- **Coverage and gap strategy** documented for practical implementation
+- **Configuration and CLI** aligned with simplified pipeline
 - **Multiple quick-start paths** for different audiences
 - **Complete API documentation** with type hints
 - **4 agent integration workflows** with examples
@@ -235,21 +228,20 @@ Example from GAP_DETECTION.md:
 - [x] Use case examples
 
 ### Rules & Checks ✅
-- [x] All 37 diagnostic rules documented
-- [x] Good/bad examples for each rule
+- [x] Tool-backed diagnostics documented
 - [x] Severity levels explained
-- [x] Configuration per rule
+- [x] Category normalization approach covered
 
 ### Gap Detection ✅
-- [x] 6 gap types fully documented
+- [x] Gap categories documented
 - [x] Real code examples
-- [x] Detection algorithms
+- [x] Coverage-driven detection strategy
 - [x] Test suggestions
 
 ### Edge Cases ✅
-- [x] 7 edge case categories
+- [x] Edge case categories
 - [x] Multiple examples per category
-- [x] Detection strategies
+- [x] Suggestion strategies
 - [x] Test generation hints
 
 ### Scoring ✅
@@ -259,7 +251,7 @@ Example from GAP_DETECTION.md:
 - [x] Configuration options documented
 
 ### Usage Guides ✅
-- [x] CLI complete with all options
+- [x] CLI complete with minimal-pass options
 - [x] Python API with examples
 - [x] Configuration all options
 - [x] CI/CD integration examples
@@ -318,6 +310,11 @@ All documentation files are in:
 1. Review **ARCHITECTURE.md** for system design
 2. Check extension points section
 3. Review specific rule implementations in **RULES.md**
+
+### To Migrate Existing Usage:
+1. Start with **MIGRATION_TO_MINIMAL_ARCHITECTURE.md**
+2. Update config keys and CLI flags
+3. Move integrations to consume `result.diagnostics` first
 
 ---
 

@@ -1,12 +1,24 @@
 # pytest-doctor: Overview
 
-**pytest-doctor** is a diagnostic tool that analyzes Python pytest test suites to identify quality issues, coverage gaps, and missing edge cases. It outputs a **0-100 health score** with actionable diagnostics designed for LLM coding agents.
+**pytest-doctor** is a diagnostic tool that analyzes Python pytest test suites to identify quality issues, coverage gaps, dead code, and risky complexity. It outputs a **0-100 health score** with actionable diagnostics designed for LLM coding agents.
 
 > See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed system design.
 
 ## What It Does
 
-pytest-doctor performs three levels of analysis:
+pytest-doctor runs a minimal multi-pass pipeline by reusing established Python tools.
+
+### Reused Tools
+
+- **ruff** for lint and quality diagnostics
+- **coverage + pytest-cov** for line/branch coverage and gap signals
+- **vulture** for dead code detection
+- **pytest-deadfixtures** for unused fixture detection
+- **radon** for complexity heuristics
+
+### Analysis Passes
+
+pytest-doctor performs four focused passes:
 
 ### 1. Test Quality Analysis
 Scans for best practice violations in test structure, assertions, fixtures, and mocking.
@@ -19,7 +31,7 @@ Scans for best practice violations in test structure, assertions, fixtures, and 
     └─ Assertion lacks descriptive message for debugging
 ```
 
-> See [RULES.md](./RULES.md) for all 40+ diagnostic rules.
+> See [RULES.md](./RULES.md) for diagnostic categories and examples.
 
 ### 2. Coverage Gap Detection
 Identifies untested functions, uncovered branches, and missing exception handling tests.
@@ -33,19 +45,25 @@ Identifies untested functions, uncovered branches, and missing exception handlin
 
 > See [GAP_DETECTION.md](./GAP_DETECTION.md) for gap detection strategy.
 
-### 3. Edge Case Analysis
-Detects missing boundary value tests, state transition gaps, and special case scenarios.
+### 3. Dead Code Analysis
+Detects unused symbols and unused fixtures that reduce test clarity and confidence.
 
 **Example:**
 ```
-❌ gap/missing-boundary-tests (error)
-    src/utils.py::truncate_string
-    ├─ Empty string input
-    ├─ Unicode character boundaries
-    └─ Length equals max_length
+⚠️  dead-code/unused-function (warning)
+    src/helpers.py:18
+    └─ Function `normalize_data` appears unused
 ```
 
-> See [EDGE_CASES.md](./EDGE_CASES.md) for edge case categories.
+### 4. Complexity Analysis
+Flags high-complexity functions where additional tests are strongly recommended.
+
+**Example:**
+```
+⚠️  complexity/high-cyclomatic-complexity (warning)
+    src/auth.py::validate_token
+    └─ Complexity score 14 exceeds threshold 10
+```
 
 ## Health Score
 
@@ -70,8 +88,8 @@ pytest-doctor . --verbose
 # Only show score
 pytest-doctor . --score
 
-# Auto-fix with agent
-pytest-doctor . --fix
+# Skip coverage pass
+pytest-doctor . --no-coverage
 ```
 
 > See [CLI.md](./CLI.md) for all available commands.
@@ -90,12 +108,13 @@ print(result.diagnostics)   # List of gaps and issues
 ### Configuration
 ```json
 {
-  "gaps": {
-    "enabled": true,
-    "minimum-coverage": 85
-  },
+  "minimum_score": 75,
+  "lint": true,
+  "coverage": true,
+  "deadCode": true,
+  "complexity": true,
   "ignore": {
-    "rules": ["assertions/multiple-assertions"],
+    "rules": ["ruff/F401"],
     "files": ["tests/fixtures/**"]
   }
 }
@@ -133,27 +152,24 @@ for gap in diagnostics.gaps:
 
 pytest-doctor consists of:
 
-1. **Code Analyzer**: AST-based analysis of source code
-2. **Test Analyzer**: Analysis of test files and structure
-3. **Coverage Engine**: Integration with coverage.py data
-4. **Gap Detector**: Identifies untested code paths
-5. **Edge Case Detector**: Finds missing boundary/special cases
-6. **Scorer**: Calculates 0-100 health score
-7. **Reporter**: Formats results for CLI and APIs
+1. **Pass Runner**: Orchestrates enabled passes (parallel where possible)
+2. **Tool Adapters**: Converts external tool output into unified diagnostics
+3. **Scorer**: Calculates 0-100 health score from severity-weighted findings
+4. **Reporter**: Formats results for CLI and APIs
 
 > See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture.
 
 ## Features
 
-- ✅ **40+ diagnostic rules** for test quality
-- ✅ **Automatic gap detection** of untested functions and branches
-- ✅ **Edge case suggestions** for boundary values and error paths
+- ✅ **Quality diagnostics** powered by Ruff and pytest tooling
+- ✅ **Coverage and gap detection** powered by coverage.py
+- ✅ **Dead code and unused fixture detection**
+- ✅ **Complexity-driven test risk signals**
 - ✅ **LLM-ready output** structured for coding agents
 - ✅ **Configurable** via pytest_doctor.config.json
 - ✅ **CLI and Python API** for flexibility
 - ✅ **GitHub Actions** integration
 - ✅ **Diff mode** for only changed files
-- ✅ **Auto-fix** support with agent integration
 
 ## Examples
 

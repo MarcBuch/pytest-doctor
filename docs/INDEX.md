@@ -16,19 +16,20 @@ Complete documentation for pytest-doctor: Test suite analysis and improvement to
 5. **INDEX.md** - This file
 
 ### Core Concepts
-6. **ARCHITECTURE.md** (1,320 W) - System design and components
-7. **RULES.md** (1,746 W) - 37+ diagnostic rules with examples
-8. **SCORING.md** (1,327 W) - 0-100 health score calculation
+6. **ARCHITECTURE.md** - Minimal tool-backed architecture
+7. **RULES.md** - Diagnostic categories and guidance
+8. **SCORING.md** - 0-100 health score calculation
 
 ### Analysis Features
-9. **GAP_DETECTION.md** (1,180 W) - Finding untested code paths
-10. **EDGE_CASES.md** (1,685 W) - Detecting missing test scenarios
+9. **GAP_DETECTION.md** - Finding untested code paths
+10. **EDGE_CASES.md** - Detecting missing test scenarios
 
 ### Usage & Integration
 11. **CLI.md** (1,059 W) - Command-line interface guide
 12. **API.md** (1,140 W) - Python API documentation
 13. **CONFIG.md** (1,140 W) - Configuration options
 14. **LLM_AGENTS.md** (1,429 W) - AI agent integration
+15. **MIGRATION_TO_MINIMAL_ARCHITECTURE.md** - Legacy-to-minimal migration guide
 
 ## 🎯 Quick Navigation
 
@@ -39,7 +40,7 @@ Complete documentation for pytest-doctor: Test suite analysis and improvement to
 - **[LLM_AGENTS.md](./LLM_AGENTS.md)** - How to integrate with agents
 
 ### By Feature
-- **[RULES.md](./RULES.md)** - All diagnostic rules (40+)
+- **[RULES.md](./RULES.md)** - Diagnostic rules and categories
 - **[GAP_DETECTION.md](./GAP_DETECTION.md)** - Finding untested functions/branches
 - **[EDGE_CASES.md](./EDGE_CASES.md)** - Finding missing edge case tests
 - **[SCORING.md](./SCORING.md)** - Understanding the health score
@@ -68,23 +69,21 @@ What's covered:
 ---
 
 ### ARCHITECTURE.md
-**Purpose:** Understand system design and components
+**Purpose:** Understand the minimal architecture that reuses existing tools
 
 What's covered:
-- System architecture diagram
-- 9 core components (analyzers, engines, reporters)
-- Data flow through the system
-- Key interfaces and data structures
-- Extension points
-- Performance considerations
-- Integration points
+- Four-pass pipeline (lint, coverage, dead code, complexity)
+- Reused tools (`ruff`, `coverage`, `vulture`, `pytest-deadfixtures`, `radon`)
+- Unified diagnostic contract
+- Scoring and reporting flow
+- Adapter-based extension strategy
 
 **When to read:** Want to understand how it works (15 minutes)
 
 ---
 
 ### RULES.md
-**Purpose:** All 37+ diagnostic rules with examples
+**Purpose:** Rule and diagnostic guidance
 
 What's covered:
 - 7 rule categories:
@@ -129,7 +128,7 @@ What's covered:
 **Purpose:** Identify missing edge case tests
 
 What's covered:
-- 7 edge case categories:
+- Edge case suggestion categories:
   1. Numeric (zero, negative, overflow, NaN)
   2. Collections (empty, single, duplicates, large)
   3. Strings (empty, unicode, special chars)
@@ -307,10 +306,9 @@ What's covered:
 ## 📊 Content Summary
 
 ### Diagnostic Rules
-- **Total:** 37+ rules
-- **Categories:** 7 (Structure, Assertions, Fixtures, Mocking, Performance, Maintainability, Coverage)
+- **Source:** primarily reused tool diagnostics (Ruff, coverage, vulture, radon)
+- **Normalized output:** one diagnostic schema across all passes
 - **Severity levels:** 3 (Error, Warning, Info)
-- **Examples per rule:** Good and bad patterns
 
 ### Gap Types
 - **Total:** 8 types
@@ -358,18 +356,16 @@ See [DOCUMENTATION_MAP.md](./DOCUMENTATION_MAP.md) for detailed TOC for each doc
 
 ## ✅ What's Documented
 
-- ✅ All 37+ diagnostic rules with examples
-- ✅ 8 gap types with detection strategies
-- ✅ 7 edge case categories with examples
+- ✅ Minimal pass architecture and tool reuse strategy
+- ✅ Coverage and gap detection approach
+- ✅ Edge-case guidance and suggestions
 - ✅ Complete scoring algorithm
 - ✅ Full CLI documentation
 - ✅ Complete Python API
-- ✅ All configuration options
+- ✅ Minimal configuration surface
 - ✅ Agent integration workflows
 - ✅ CI/CD integration examples
 - ✅ Cross-linked navigation
-- ✅ 50+ code examples
-- ✅ 30+ reference tables
 
 ## 🚀 Starting Points
 
@@ -407,6 +403,7 @@ docs/
 ├── API.md (Python API)
 ├── CONFIG.md (configuration)
 ├── LLM_AGENTS.md (agent integration)
+├── MIGRATION_TO_MINIMAL_ARCHITECTURE.md (migration guide)
 ├── DOCUMENTATION_MAP.md (visual guide)
 └── DOCUMENTATION_SUMMARY.md (overview)
 ```

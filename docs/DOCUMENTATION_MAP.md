@@ -37,17 +37,17 @@ LEARNING PATHS DIVERGE:
     │   └─ Advanced usage
     │
     ├─→ RULES.md (Quality checks)
-    │   ├─ 40+ diagnostic rules
+    │   ├─ Tool-backed diagnostic categories
     │   ├─ Good/bad examples
     │   └─ Configuration
     │
     ├─→ GAP_DETECTION.md (Finding gaps)
-    │   ├─ 6 gap types
+    │   ├─ Coverage-derived gap categories
     │   ├─ Real examples
     │   └─ Test suggestions
     │
     ├─→ EDGE_CASES.md (Missing tests)
-    │   ├─ 7 edge case categories
+    │   ├─ Edge case suggestion categories
     │   ├─ Concrete examples
     │   └─ Test generation
     │
@@ -144,7 +144,7 @@ Every document links to:
 - [CONFIG.md](./CONFIG.md) - rule configuration
 
 ### From GAP_DETECTION.md
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - analyzer design
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - pass and adapter design
 - [EDGE_CASES.md](./EDGE_CASES.md) - complementary feature
 - [RULES.md](./RULES.md) - related rules
 - [SCORING.md](./SCORING.md) - gap penalties

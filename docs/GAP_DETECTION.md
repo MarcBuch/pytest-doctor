@@ -2,7 +2,7 @@
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for system overview.
 
-Gap detection is the core differentiator of pytest-doctor. It identifies untested code paths, uncovered branches, and missing exception handling tests.
+Gap diagnostics are generated from the coverage/gaps pass and identify untested code paths, uncovered branches, and missing exception handling tests.
 
 ## Gap Categories
 

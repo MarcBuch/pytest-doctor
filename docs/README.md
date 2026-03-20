@@ -29,15 +29,15 @@ pytest-doctor ./tests --score
    - Quick start examples
    - Links to detailed docs
 
-2. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design
-   - Component architecture
-   - Data flow through system
-   - Core interfaces and classes
-   - Extension points
+2. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Minimal system design
+   - Tool-backed pass architecture
+   - Unified diagnostic contract
+   - Simple scoring flow
+   - Extension via adapters
 
 ### Analysis Features
 
-3. **[RULES.md](./RULES.md)** - 40+ diagnostic rules
+3. **[RULES.md](./RULES.md)** - Diagnostic rules and categories
    - Test structure rules
    - Assertion quality rules
    - Fixture best practices
@@ -55,13 +55,9 @@ pytest-doctor ./tests --score
    - Dead test code
 
 5. **[EDGE_CASES.md](./EDGE_CASES.md)** - Missing test scenarios
-   - Numeric edge cases (zero, negative, overflow)
-   - Collection edge cases (empty, single, large)
-   - String edge cases (empty, unicode, special chars)
-   - State & lifecycle edge cases
-   - Resource & performance edge cases
-   - Error path edge cases
-   - Type coercion edge cases
+   - Optional heuristics and suggestions
+   - Boundary and error-path guidance
+   - Categories that map into diagnostics
 
 6. **[SCORING.md](./SCORING.md)** - How results are scored
    - 0-100 health score
@@ -93,15 +89,17 @@ pytest-doctor ./tests --score
    - Performance optimization
    - Advanced usage
 
-9. **[CONFIG.md](./CONFIG.md)** - Configuration
-   - Configuration file locations
-   - All configuration options
-   - Rule customization
-   - Ignore rules and files
-   - Severity levels
+9. **[CONFIG.md](./CONFIG.md)** - Minimal configuration
+   - Pass toggles
+   - Ignore rules/files
+   - Score threshold
+   - Tool override escape hatch
    - Environment variables
-   - `pyproject.toml` and `setup.cfg` support
-   - Examples for different scenarios
+
+11. **[MIGRATION_TO_MINIMAL_ARCHITECTURE.md](./MIGRATION_TO_MINIMAL_ARCHITECTURE.md)** - Migration guide
+    - Legacy-to-minimal concept mapping
+    - CLI/config/API migration reference
+    - Backward compatibility strategy
 
 ### Agent Integration
 
@@ -118,12 +116,13 @@ pytest-doctor ./tests --score
 | Feature | Document | CLI | API |
 |---------|----------|-----|-----|
 | **Test Quality** | [RULES.md](./RULES.md) | `pytest-doctor .` | `diagnose()` |
-| **Coverage Gaps** | [GAP_DETECTION.md](./GAP_DETECTION.md) | `--verbose` | `result.gaps` |
-| **Edge Cases** | [EDGE_CASES.md](./EDGE_CASES.md) | `--verbose` | `result.gaps` |
+| **Coverage Gaps** | [GAP_DETECTION.md](./GAP_DETECTION.md) | `--verbose` | `result.diagnostics` |
+| **Dead Code** | [ARCHITECTURE.md](./ARCHITECTURE.md) | `--no-dead-code` | `result.diagnostics` |
+| **Complexity** | [ARCHITECTURE.md](./ARCHITECTURE.md) | `--no-complexity` | `result.diagnostics` |
 | **Health Score** | [SCORING.md](./SCORING.md) | `--score` | `result.score` |
 | **JSON Output** | [CLI.md](./CLI.md) | `--format json` | `diagnose()` |
 | **Configuration** | [CONFIG.md](./CONFIG.md) | `--config` | `config` param |
-| **GitHub Integration** | [CLI.md](./CLI.md) | `--github-token` | - |
+| **Tool-backed pipeline** | [ARCHITECTURE.md](./ARCHITECTURE.md) | `pytest-doctor .` | `diagnose()` |
 | **Diff Analysis** | [CLI.md](./CLI.md) | `--diff main` | - |
 | **Agent Integration** | [LLM_AGENTS.md](./LLM_AGENTS.md) | - | Structured API |
 
@@ -175,7 +174,7 @@ pytest-doctor ./tests --score
 | Maintainability | 6 rules | [RULES.md#6-maintainability-rules](./RULES.md#6-maintainability-rules) |
 | Coverage | 4 rules | [RULES.md#7-coverage-rules](./RULES.md#7-coverage-rules) |
 
-**Total: 37 diagnostic rules** + Gap detection + Edge case detection
+**Diagnostics are produced by reused tools and normalized into one model.**
 
 ### Gap Types
 
@@ -188,17 +187,14 @@ pytest-doctor ./tests --score
 | Partial Coverage | [GAP_DETECTION.md#6-partial-function-coverage](./GAP_DETECTION.md#6-partial-function-coverage) | Some code paths untested |
 | Dead Test Code | [GAP_DETECTION.md#7-dead-test-code](./GAP_DETECTION.md#7-dead-test-code) | Unreachable test code |
 
-### Edge Case Categories
+### Passes and Tools
 
-| Category | Document | Examples |
+| Pass | Primary Tools | Purpose |
 |----------|----------|----------|
-| Numeric | [EDGE_CASES.md#1-numeric-edge-cases](./EDGE_CASES.md#1-numeric-edge-cases) | Zero, negative, overflow, NaN |
-| Collections | [EDGE_CASES.md#2-collection-edge-cases](./EDGE_CASES.md#2-collection-edge-cases) | Empty, single, duplicates, large |
-| Strings | [EDGE_CASES.md#3-string-edge-cases](./EDGE_CASES.md#3-string-edge-cases) | Empty, unicode, special chars |
-| State | [EDGE_CASES.md#4-state--lifecycle-edge-cases](./EDGE_CASES.md#4-state--lifecycle-edge-cases) | Init, double init, cleanup |
-| Resources | [EDGE_CASES.md#5-resource--performance-edge-cases](./EDGE_CASES.md#5-resource--performance-edge-cases) | Exhaustion, timeout, leaks |
-| Errors | [EDGE_CASES.md#6-error-path-edge-cases](./EDGE_CASES.md#6-error-path-edge-cases) | Missing file, invalid format |
-| Type Coercion | [EDGE_CASES.md#7-type-coercion-edge-cases](./EDGE_CASES.md#7-type-coercion-edge-cases) | None, wrong type, falsy |
+| Lint/Quality | `ruff` (+ optional pytest style plugin) | Style, correctness, maintainability |
+| Coverage/Gaps | `coverage` + `pytest-cov` | Line/branch coverage and gaps |
+| Dead Code | `vulture`, `pytest-deadfixtures` | Unused code and fixtures |
+| Complexity | `radon` | High-complexity hotspots |
 
 ### CLI Options
 
@@ -264,12 +260,12 @@ print(result.score.value)
 ```
 See [API.md#basic-usage](./API.md#basic-usage)
 
-**Finding gaps**
+**Finding diagnostics**
 ```python
-for gap in result.gaps:
-    print(gap.description)
+for diag in result.diagnostics:
+    print(diag.category, diag.message)
 ```
-See [API.md#gap-analysis](./API.md#gap-analysis)
+See [API.md](./API.md)
 
 **Iterating diagnostics**
 ```python
@@ -313,28 +309,28 @@ See [SCORING.md](./SCORING.md) for how it's calculated.
 
 ### Gap
 
-Untested code path (function, branch, exception, edge case)
+Coverage-related diagnostic indicating untested or partially tested behavior.
 
-See [GAP_DETECTION.md](./GAP_DETECTION.md) for gap types.
+See [GAP_DETECTION.md](./GAP_DETECTION.md) for categories.
 
 ### Edge Case
 
-Missing test scenario (boundary value, special input, error condition)
+Optional suggestion category derived from diagnostics and heuristics.
 
-See [EDGE_CASES.md](./EDGE_CASES.md) for edge case types.
+See [EDGE_CASES.md](./EDGE_CASES.md).
 
 ### Diagnostic
 
-Single finding from any analyzer (gap, quality issue, coverage metric)
+Single normalized finding from a reused tool pass.
 
-See [RULES.md](./RULES.md) for all diagnostic rules.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) and [RULES.md](./RULES.md).
 
 ## Glossary
 
 | Term | Definition | Link |
 |------|-----------|------|
 | Gap | Untested code path | [GAP_DETECTION.md](./GAP_DETECTION.md) |
-| Edge Case | Missing test scenario | [EDGE_CASES.md](./EDGE_CASES.md) |
+| Edge Case | Suggested missing scenario | [EDGE_CASES.md](./EDGE_CASES.md) |
 | Diagnostic | Single finding | [RULES.md](./RULES.md) |
 | Score | 0-100 health metric | [SCORING.md](./SCORING.md) |
 | Rule | Quality check | [RULES.md](./RULES.md) |
@@ -377,6 +373,7 @@ Start here based on what you want to accomplish:
 - [Want to configure it?](./CONFIG.md) → Configuration guide
 - [Want to use in CI/CD?](./CLI.md#integration-with-cicd) → CI/CD integration
 - [Want to use from Python?](./API.md) → Python API
+- [Want to migrate from legacy docs?](./MIGRATION_TO_MINIMAL_ARCHITECTURE.md) → Migration guide
 
 ## Versions & Compatibility
 
@@ -403,7 +400,8 @@ DOCUMENTATION
 ├── CLI.md (command-line usage)
 ├── API.md (Python API)
 ├── CONFIG.md (configuration)
-└── LLM_AGENTS.md (agent integration)
+├── LLM_AGENTS.md (agent integration)
+└── MIGRATION_TO_MINIMAL_ARCHITECTURE.md (migration guide)
 ```
 
 ---
