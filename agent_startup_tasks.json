@@ -1,0 +1,234 @@
+{
+  "project": "pytest-doctor",
+  "source_docs": [
+    "docs/OVERVIEW.md",
+    "docs/ARCHITECTURE.md",
+    "docs/README.md",
+    "docs/CLI.md",
+    "docs/API.md",
+    "docs/CONFIG.md",
+    "docs/SCORING.md",
+    "docs/LLM_AGENTS.md"
+  ],
+  "notes": [
+    "These are startup tasks only; no feature implementation is included.",
+    "Use uv as the Python package manager and workflow tool."
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "priority": "high",
+      "agent": "bootstrap-agent",
+      "title": "Initialize uv-based Python project scaffold",
+      "goal": "Create the base project structure and packaging metadata for pytest-doctor.",
+      "dependencies": [],
+      "instructions": [
+        "Initialize project metadata with uv (pyproject.toml, package name pytest-doctor, Python >=3.8).",
+        "Set up src layout: src/pytest_doctor/ and tests/ directories.",
+        "Create package entry points and a minimal module skeleton for analyzers, scoring, reporter, and CLI namespaces.",
+        "Add core metadata (description, license placeholder, authors placeholder).",
+        "Generate lockfile via uv and document basic uv commands in README or CONTRIBUTING."
+      ],
+      "deliverables": [
+        "pyproject.toml configured for uv workflows",
+        "uv.lock",
+        "src/pytest_doctor/ package skeleton",
+        "tests/ folder skeleton"
+      ],
+      "acceptance_criteria": [
+        "`uv sync` succeeds on a clean checkout.",
+        "Project imports `pytest_doctor` without errors.",
+        "Directory layout matches docs architecture at a high level."
+      ]
+    },
+    {
+      "id": "T2",
+      "priority": "high",
+      "agent": "quality-tooling-agent",
+      "title": "Set up developer tooling with uv",
+      "goal": "Enable formatting, linting, typing, and test execution from day one.",
+      "dependencies": [
+        "T1"
+      ],
+      "instructions": [
+        "Add dev dependencies using uv for pytest, coverage, ruff, and mypy.",
+        "Define tool configuration in pyproject.toml for linting, formatting, and type checking.",
+        "Create standard commands/scripts documented with uv usage (e.g., lint, test, typecheck).",
+        "Add a basic test runner configuration and coverage defaults aligned with docs expectations."
+      ],
+      "deliverables": [
+        "Configured dev dependencies in pyproject.toml",
+        "Tool config sections for ruff/mypy/pytest/coverage",
+        "Documented uv command workflow for contributors"
+      ],
+      "acceptance_criteria": [
+        "`uv run pytest` executes successfully (even with placeholder tests).",
+        "`uv run ruff check .` and `uv run mypy src` run without config errors.",
+        "Coverage command is runnable via uv."
+      ]
+    },
+    {
+      "id": "T3",
+      "priority": "high",
+      "agent": "domain-model-agent",
+      "title": "Define core data contracts and result models",
+      "goal": "Implement shared dataclasses/types that all analyzers and reporters will use.",
+      "dependencies": [
+        "T1"
+      ],
+      "instructions": [
+        "Create initial models for Diagnostic, Gap, EdgeCase, Score, and Results based on architecture docs.",
+        "Define enums/constants for severity and category conventions.",
+        "Add serialization helpers for JSON output use cases.",
+        "Write unit tests validating model construction and schema stability."
+      ],
+      "deliverables": [
+        "Core model module(s) under src/pytest_doctor/",
+        "Tests for data contracts",
+        "Minimal schema examples in docs or docstrings"
+      ],
+      "acceptance_criteria": [
+        "All core models can be imported and instantiated.",
+        "Model tests pass via uv-run pytest.",
+        "JSON serialization shape supports CLI/API requirements."
+      ]
+    },
+    {
+      "id": "T4",
+      "priority": "high",
+      "agent": "pipeline-skeleton-agent",
+      "title": "Create analysis pipeline skeleton and module boundaries",
+      "goal": "Lay out non-functional analyzer interfaces and orchestration flow before full logic.",
+      "dependencies": [
+        "T1",
+        "T3"
+      ],
+      "instructions": [
+        "Create analyzer modules: code_analyzer, test_analyzer, coverage_engine, gap_detector, edge_case_detector, quality_analyzer.",
+        "Define interface signatures and placeholder return objects consistent with docs.",
+        "Add a correlation engine and top-level diagnose orchestration function skeleton.",
+        "Ensure clean import graph and explicit boundaries between analysis stages."
+      ],
+      "deliverables": [
+        "Analyzer interface skeletons",
+        "Correlation and orchestration skeleton",
+        "Smoke tests for end-to-end control flow with placeholder data"
+      ],
+      "acceptance_criteria": [
+        "`diagnose()` executes through the full pipeline without unhandled exceptions.",
+        "Each stage is represented by a dedicated module/class as documented.",
+        "Smoke tests pass using uv-run pytest."
+      ]
+    },
+    {
+      "id": "T5",
+      "priority": "medium",
+      "agent": "cli-agent",
+      "title": "Implement CLI command surface skeleton",
+      "goal": "Expose documented command options and output modes with placeholder behavior.",
+      "dependencies": [
+        "T1",
+        "T4"
+      ],
+      "instructions": [
+        "Create CLI entrypoint `pytest-doctor` wired through pyproject script configuration.",
+        "Add argument parsing for key flags from docs (verbose, score, format, diff, config, project).",
+        "Integrate CLI with diagnose() skeleton and reporter placeholders.",
+        "Return stable exit codes and helpful usage text."
+      ],
+      "deliverables": [
+        "CLI module and registered console script",
+        "Argument parser with documented options",
+        "Basic CLI tests"
+      ],
+      "acceptance_criteria": [
+        "`uv run pytest-doctor --help` works.",
+        "CLI accepts major flags without crashing.",
+        "Exit codes are deterministic for success/failure paths."
+      ]
+    },
+    {
+      "id": "T6",
+      "priority": "medium",
+      "agent": "config-agent",
+      "title": "Add configuration loading and validation skeleton",
+      "goal": "Support documented config files and defaults early in the project lifecycle.",
+      "dependencies": [
+        "T1",
+        "T3"
+      ],
+      "instructions": [
+        "Create config loader supporting pytest_doctor.config.json and pyproject.toml sources.",
+        "Implement merge strategy: defaults < file config < runtime args.",
+        "Add schema validation with clear error messages for invalid options.",
+        "Provide tests for precedence and validation behavior."
+      ],
+      "deliverables": [
+        "Config module(s)",
+        "Default config definitions",
+        "Validation and precedence tests"
+      ],
+      "acceptance_criteria": [
+        "Valid config files load successfully.",
+        "Invalid configs fail with actionable errors.",
+        "Precedence rules are covered by tests."
+      ]
+    },
+    {
+      "id": "T7",
+      "priority": "medium",
+      "agent": "ci-agent",
+      "title": "Set up CI baseline for uv workflows",
+      "goal": "Create an automated quality gate to keep scaffolding stable as implementation begins.",
+      "dependencies": [
+        "T2",
+        "T4",
+        "T5",
+        "T6"
+      ],
+      "instructions": [
+        "Add CI workflow that installs uv, syncs dependencies, and runs lint/typecheck/tests.",
+        "Include coverage command execution and artifact/report output if feasible.",
+        "Ensure CI uses pinned Python versions compatible with project constraints.",
+        "Document local parity commands using uv."
+      ],
+      "deliverables": [
+        "CI workflow file(s)",
+        "Contributor docs for running CI-equivalent commands locally"
+      ],
+      "acceptance_criteria": [
+        "CI passes on initial scaffold branch.",
+        "Local uv commands mirror CI steps.",
+        "Failures are easy to interpret from logs."
+      ]
+    },
+    {
+      "id": "T8",
+      "priority": "medium",
+      "agent": "planning-agent",
+      "title": "Prepare implementation backlog from documentation",
+      "goal": "Turn design docs into an executable backlog for phased delivery.",
+      "dependencies": [
+        "T1",
+        "T3",
+        "T4"
+      ],
+      "instructions": [
+        "Break down RULES, GAP_DETECTION, EDGE_CASES, and SCORING docs into milestone epics.",
+        "Define MVP scope (minimum useful diagnosis path) and post-MVP enhancements.",
+        "Estimate complexity and identify cross-team dependencies.",
+        "Produce a staged delivery sequence aligned to analyzer architecture."
+      ],
+      "deliverables": [
+        "Prioritized backlog document",
+        "Milestone plan with MVP boundary",
+        "Dependency map"
+      ],
+      "acceptance_criteria": [
+        "Backlog covers all major documented features.",
+        "MVP scope is explicit and time-boxable.",
+        "Dependencies and risks are called out clearly."
+      ]
+    }
+  ]
+}
