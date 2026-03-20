@@ -4,4 +4,4 @@ This module provides the command-line interface for pytest-doctor,
 including argument parsing and command execution.
 """
 
-__all__ = ["parse_args", "main"]
+__all__ = ["main", "parse_arguments"]
