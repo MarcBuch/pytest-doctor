@@ -3,7 +3,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import click
 
@@ -112,23 +112,39 @@ def main(
     # Run all analysis engines
     try:
         # Prepare analysis functions for parallel execution
-        analysis_functions: list[tuple[Callable[[], AnalysisResult | None], str]] = []
+        analysis_functions: list[tuple[Callable[[], Union[AnalysisResult, None]], str]] = []
 
         if config.lint:
             ruff_analyzer = RuffAnalyzer(config)
-            analysis_functions.append((lambda a=ruff_analyzer, p=path: a.analyze(p), "ruff"))
+
+            def ruff_fn() -> Union[AnalysisResult, None]:
+                return ruff_analyzer.analyze(path)
+
+            analysis_functions.append((ruff_fn, "ruff"))
 
         if config.dead_code:
             vulture_analyzer = VultureAnalyzer(config)
-            analysis_functions.append((lambda a=vulture_analyzer, p=path: a.analyze(p), "vulture"))
+
+            def vulture_fn() -> Union[AnalysisResult, None]:
+                return vulture_analyzer.analyze(path)
+
+            analysis_functions.append((vulture_fn, "vulture"))
 
         if config.test_analysis:
             quality_analyzer = QualityAnalyzer(config)
-            analysis_functions.append((lambda a=quality_analyzer, p=path: a.analyze(p), "quality"))
+
+            def quality_fn() -> Union[AnalysisResult, None]:
+                return quality_analyzer.analyze(path)
+
+            analysis_functions.append((quality_fn, "quality"))
 
         if config.coverage_gaps:
             gap_analyzer = GapAnalyzer(config)
-            analysis_functions.append((lambda a=gap_analyzer, p=path: a.analyze(p), "gap"))
+
+            def gap_fn() -> Union[AnalysisResult, None]:
+                return gap_analyzer.analyze(path)
+
+            analysis_functions.append((gap_fn, "gap"))
 
         # Run analyses in parallel
         if config.verbose:

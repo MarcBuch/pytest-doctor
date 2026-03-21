@@ -64,7 +64,7 @@ class ResultsAggregator:
                 summary[severity_key] += 1
 
         # Group by file
-        by_file = {}
+        by_file: dict[str, list[Issue]] = {}
         for issue in filtered_issues:
             if issue.file_path not in by_file:
                 by_file[issue.file_path] = []
