@@ -2,7 +2,7 @@
 
 import pytest
 
-from pytest_doctor.agent_output import AgentContext, AgentFixSuggestion, AgentOutput
+from pytest_doctor.agent_output import AgentContext, AgentFixSuggestion
 from pytest_doctor.aggregation import AggregatedIssues
 from pytest_doctor.models import AnalysisResult, DiagnosticReport, Issue, IssueSource, Severity
 
