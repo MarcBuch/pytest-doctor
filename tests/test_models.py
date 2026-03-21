@@ -1,5 +1,7 @@
 """Tests for data models."""
 
+import pytest
+
 from pytest_doctor.models import (
     AnalysisResult,
     DiagnosticReport,
@@ -98,21 +100,23 @@ class TestIssue:
         assert issue.severity == Severity.INFO
         assert issue.to_dict()["severity"] == "info"
 
-    def test_issue_source_variants(self) -> None:
-        """Test issue with different sources."""
-        sources = [
+    @pytest.mark.parametrize(
+        "source",
+        [
             IssueSource.LINTING,
             IssueSource.DEAD_CODE,
             IssueSource.TEST_QUALITY,
             IssueSource.COVERAGE,
-        ]
-        for source in sources:
-            issue = Issue(
-                file_path="test.py",
-                line_number=1,
-                source=source,
-            )
-            assert issue.source == source
+        ],
+    )
+    def test_issue_source_variants(self, source) -> None:
+        """Test issue with different sources."""
+        issue = Issue(
+            file_path="test.py",
+            line_number=1,
+            source=source,
+        )
+        assert issue.source == source
 
 
 class TestAnalysisResult:

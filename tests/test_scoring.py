@@ -159,11 +159,12 @@ def test_health_scorer_categorize_score() -> None:
     assert scorer.categorize_score(90) == "good"
 
 
-def test_health_scorer_score_range() -> None:
+@pytest.mark.parametrize("num_issues", [1, 10, 25, 50, 100])
+def test_health_scorer_score_range(num_issues) -> None:
     """Test that score stays within 0-100 range."""
     result = AnalysisResult(engine="ruff")
-    # Create many critical issues
-    for _ in range(50):
+    # Create issues
+    for _ in range(num_issues):
         result.issues.append(
             Issue(
                 file_path="test.py",

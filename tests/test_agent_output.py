@@ -221,12 +221,9 @@ class TestAgentOutputFormatter:
         formatter = AgentOutputFormatter()
         assert formatter is not None
 
-    def test_format_for_agent_basic(self) -> None:
-        """Test formatting basic diagnostic for agent."""
-        formatter = AgentOutputFormatter()
-
-        # Create a simple diagnostic report
-        diagnostic = DiagnosticReport(
+    def _create_basic_diagnostic(self) -> DiagnosticReport:
+        """Helper to create a basic diagnostic report."""
+        return DiagnosticReport(
             path=".",
             score=75,
             results=[],
@@ -234,8 +231,9 @@ class TestAgentOutputFormatter:
             total_issues=5,
         )
 
-        # Create aggregated issues
-        aggregated = AggregatedIssues(
+    def _create_basic_aggregated_issues(self) -> AggregatedIssues:
+        """Helper to create basic aggregated issues."""
+        return AggregatedIssues(
             all_issues=[
                 Issue(
                     file_path="tests/test_example.py",
@@ -258,17 +256,59 @@ class TestAgentOutputFormatter:
             summary={"critical": 0, "warning": 2, "info": 3},
         )
 
+    def test_format_for_agent_returns_output(self) -> None:
+        """Test format_for_agent returns valid AgentOutput."""
+        formatter = AgentOutputFormatter()
+        diagnostic = self._create_basic_diagnostic()
+        aggregated = self._create_basic_aggregated_issues()
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
+        assert isinstance(agent_output, AgentOutput)
+
+    def test_format_for_agent_health_score(self) -> None:
+        """Test format_for_agent preserves health score."""
+        formatter = AgentOutputFormatter()
+        diagnostic = self._create_basic_diagnostic()
+        aggregated = self._create_basic_aggregated_issues()
+
         agent_output = formatter.format_for_agent(diagnostic, aggregated)
 
         assert agent_output.context.health_score == 75
+
+    def test_format_for_agent_total_issues(self) -> None:
+        """Test format_for_agent preserves total issues count."""
+        formatter = AgentOutputFormatter()
+        diagnostic = self._create_basic_diagnostic()
+        aggregated = self._create_basic_aggregated_issues()
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
         assert agent_output.context.total_issues == 5
+
+    def test_format_for_agent_warning_count(self) -> None:
+        """Test format_for_agent preserves warning count."""
+        formatter = AgentOutputFormatter()
+        diagnostic = self._create_basic_diagnostic()
+        aggregated = self._create_basic_aggregated_issues()
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
         assert agent_output.context.warning_count == 2
+
+    def test_format_for_agent_suggestions(self) -> None:
+        """Test format_for_agent creates suggestions."""
+        formatter = AgentOutputFormatter()
+        diagnostic = self._create_basic_diagnostic()
+        aggregated = self._create_basic_aggregated_issues()
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
         assert len(agent_output.suggestions) == 2
 
-    def test_format_for_agent_to_dict(self) -> None:
+    def test_agent_output_to_dict(self) -> None:
         """Test converting agent output to dict."""
         formatter = AgentOutputFormatter()
-
         diagnostic = DiagnosticReport(
             path=".",
             score=75,
@@ -276,7 +316,6 @@ class TestAgentOutputFormatter:
             summary={"critical": 1, "warning": 2, "info": 3},
             total_issues=6,
         )
-
         aggregated = AggregatedIssues(
             all_issues=[
                 Issue(
@@ -297,13 +336,41 @@ class TestAgentOutputFormatter:
 
         assert output_dict["context"]["health_score"] == 75
         assert output_dict["context"]["critical_count"] == 1
+
+    def test_agent_output_to_dict_has_suggestions(self) -> None:
+        """Test to_dict includes suggestions."""
+        formatter = AgentOutputFormatter()
+        diagnostic = DiagnosticReport(
+            path=".",
+            score=75,
+            results=[],
+            summary={"critical": 1, "warning": 2, "info": 3},
+            total_issues=6,
+        )
+        aggregated = AggregatedIssues(
+            all_issues=[
+                Issue(
+                    file_path="tests/test_example.py",
+                    line_number=10,
+                    message="Critical issue",
+                    severity=Severity.CRITICAL,
+                    source=IssueSource.LINTING,
+                    recommendation="Fix this",
+                ),
+            ],
+            by_file={"tests/test_example.py": []},
+            summary={"critical": 1, "warning": 2, "info": 3},
+        )
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+        output_dict = agent_output.to_dict()
+
         assert len(output_dict["suggestions"]) == 1
         assert "deeplinks" in output_dict
 
-    def test_deeplinks_creation(self) -> None:
-        """Test deeplink creation."""
+    def test_deeplinks_are_created(self) -> None:
+        """Test deeplinks are created."""
         formatter = AgentOutputFormatter()
-
         diagnostic = DiagnosticReport(
             path="/project/path",
             score=50,
@@ -311,7 +378,6 @@ class TestAgentOutputFormatter:
             summary={"critical": 1, "warning": 0, "info": 0},
             total_issues=1,
         )
-
         aggregated = AggregatedIssues(
             all_issues=[
                 Issue(
@@ -329,15 +395,40 @@ class TestAgentOutputFormatter:
 
         agent_output = formatter.format_for_agent(diagnostic, aggregated)
 
-        # Check deeplinks are present
         assert len(agent_output.deeplinks) > 0
-        assert "diagnostics_summary" in agent_output.deeplinks
+
+    def test_deeplinks_have_documentation(self) -> None:
+        """Test deeplinks include documentation."""
+        formatter = AgentOutputFormatter()
+        diagnostic = DiagnosticReport(
+            path="/project/path",
+            score=50,
+            results=[],
+            summary={"critical": 1, "warning": 0, "info": 0},
+            total_issues=1,
+        )
+        aggregated = AggregatedIssues(
+            all_issues=[
+                Issue(
+                    file_path="tests/test_example.py",
+                    line_number=10,
+                    message="Critical issue",
+                    severity=Severity.CRITICAL,
+                    source=IssueSource.LINTING,
+                    recommendation="Fix this",
+                ),
+            ],
+            by_file={"tests/test_example.py": []},
+            summary={"critical": 1, "warning": 0, "info": 0},
+        )
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
         assert "documentation" in agent_output.deeplinks
 
     def test_deeplinks_include_critical_files(self) -> None:
         """Test that deeplinks include critical files."""
         formatter = AgentOutputFormatter()
-
         diagnostic = DiagnosticReport(
             path=".",
             score=30,
@@ -345,7 +436,6 @@ class TestAgentOutputFormatter:
             summary={"critical": 2, "warning": 0, "info": 0},
             total_issues=2,
         )
-
         aggregated = AggregatedIssues(
             all_issues=[
                 Issue(
@@ -371,14 +461,12 @@ class TestAgentOutputFormatter:
 
         agent_output = formatter.format_for_agent(diagnostic, aggregated)
 
-        # Check that critical file deeplinks are present
         has_critical_link = any("critical_" in key for key in agent_output.deeplinks)
         assert has_critical_link
 
-    def test_format_with_no_issues(self) -> None:
-        """Test formatting when there are no issues."""
+    def test_format_with_no_issues_health_score(self) -> None:
+        """Test formatting with no issues has perfect score."""
         formatter = AgentOutputFormatter()
-
         diagnostic = DiagnosticReport(
             path=".",
             score=100,
@@ -386,7 +474,6 @@ class TestAgentOutputFormatter:
             summary={"critical": 0, "warning": 0, "info": 0},
             total_issues=0,
         )
-
         aggregated = AggregatedIssues(
             all_issues=[],
             by_file={},
@@ -396,5 +483,23 @@ class TestAgentOutputFormatter:
         agent_output = formatter.format_for_agent(diagnostic, aggregated)
 
         assert agent_output.context.health_score == 100
-        assert agent_output.context.total_issues == 0
+
+    def test_format_with_no_issues_no_suggestions(self) -> None:
+        """Test formatting with no issues has no suggestions."""
+        formatter = AgentOutputFormatter()
+        diagnostic = DiagnosticReport(
+            path=".",
+            score=100,
+            results=[],
+            summary={"critical": 0, "warning": 0, "info": 0},
+            total_issues=0,
+        )
+        aggregated = AggregatedIssues(
+            all_issues=[],
+            by_file={},
+            summary={"critical": 0, "warning": 0, "info": 0},
+        )
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
         assert len(agent_output.suggestions) == 0

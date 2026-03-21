@@ -325,8 +325,7 @@ def func_with_division(a, b):
 
         analyzer = GapAnalyzer()
         result = analyzer.analyze(str(tmp_path))
-        for issue in result.issues:
-            assert issue.source == IssueSource.COVERAGE
+        assert all(issue.source == IssueSource.COVERAGE for issue in result.issues)
 
     def test_gap_analyzer_issue_has_line_number(self, tmp_path) -> None:
         """Test that all issues have line numbers."""
@@ -338,8 +337,7 @@ def func_with_division(a, b):
 
         analyzer = GapAnalyzer()
         result = analyzer.analyze(str(tmp_path))
-        for issue in result.issues:
-            assert issue.line_number > 0
+        assert all(issue.line_number > 0 for issue in result.issues)
 
     def test_gap_analyzer_issue_has_recommendation(self, tmp_path) -> None:
         """Test that all issues have recommendations."""
@@ -351,12 +349,20 @@ def func_with_division(a, b):
 
         analyzer = GapAnalyzer()
         result = analyzer.analyze(str(tmp_path))
-        for issue in result.issues:
-            assert issue.recommendation
-            assert len(issue.recommendation) > 0
+        assert all(
+            issue.recommendation and len(issue.recommendation) > 0 for issue in result.issues
+        )
 
-    def test_gap_analyzer_issue_severity_levels(self, tmp_path) -> None:
-        """Test that issues have appropriate severity levels."""
+    @pytest.mark.parametrize(
+        "severity",
+        [
+            Severity.CRITICAL,
+            Severity.WARNING,
+            Severity.INFO,
+        ],
+    )
+    def test_gap_analyzer_issue_valid_severity(self, tmp_path, severity) -> None:
+        """Test that issues can have valid severity levels."""
         src_file = tmp_path / "source.py"
         src_file.write_text("""
 def complex_func(a):
@@ -369,8 +375,10 @@ def complex_func(a):
 
         analyzer = GapAnalyzer()
         result = analyzer.analyze(str(tmp_path))
+        # Just verify that the severity can be set and retrieved
+        valid_severities = {Severity.CRITICAL, Severity.WARNING, Severity.INFO}
         for issue in result.issues:
-            assert issue.severity in [Severity.CRITICAL, Severity.WARNING, Severity.INFO]
+            assert issue.severity in valid_severities
 
 
 class TestGapAnalyzerSyntaxErrors:
