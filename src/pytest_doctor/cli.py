@@ -9,7 +9,7 @@ import click
 
 from pytest_doctor import __version__
 from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
-from pytest_doctor.analyzers import QualityAnalyzer, RuffAnalyzer, VultureAnalyzer
+from pytest_doctor.analyzers import GapAnalyzer, QualityAnalyzer, RuffAnalyzer, VultureAnalyzer
 from pytest_doctor.config import load_config
 from pytest_doctor.git_utils import GitDiffHandler
 from pytest_doctor.models import DiagnosticReport
@@ -130,6 +130,12 @@ def main(
                 click.echo("Running test quality analysis...", err=True)
             quality_analyzer = QualityAnalyzer(config)
             results.append(quality_analyzer.analyze(path))
+
+        if config.coverage_gaps:
+            if config.verbose:
+                click.echo("Running coverage gap analysis...", err=True)
+            gap_analyzer = GapAnalyzer(config)
+            results.append(gap_analyzer.analyze(path))
 
         # Aggregate results
         aggregator = ResultsAggregator()

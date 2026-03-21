@@ -108,20 +108,20 @@
           "status": "completed"
         },
         {
-          "id": "analysis-002",
-          "title": "Implement gap analysis for coverage",
-          "description": "Detect logic paths, edge cases, and risk areas that tests miss",
-          "acceptance_criteria": [
-            "Identifies untested code paths in the project",
-            "Flags edge cases that should be tested",
-            "Highlights high-risk areas with insufficient test coverage",
-            "Provides specific locations and recommendations"
-          ],
-          "estimated_effort": "large",
-          "depends_on": [
-            "setup-001"
-          ],
-          "status": "pending"
+           "id": "analysis-002",
+           "title": "Implement gap analysis for coverage",
+           "description": "Detect logic paths, edge cases, and risk areas that tests miss",
+           "acceptance_criteria": [
+             "Identifies untested code paths in the project",
+             "Flags edge cases that should be tested",
+             "Highlights high-risk areas with insufficient test coverage",
+             "Provides specific locations and recommendations"
+           ],
+           "estimated_effort": "large",
+           "depends_on": [
+             "setup-001"
+           ],
+           "status": "completed"
         }
       ]
     },

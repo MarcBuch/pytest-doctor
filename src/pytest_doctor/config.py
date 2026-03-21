@@ -95,6 +95,7 @@ class Config:
     lint: bool = True
     dead_code: bool = True
     test_analysis: bool = True
+    coverage_gaps: bool = True
     verbose: bool = False
 
     @classmethod
@@ -107,6 +108,7 @@ class Config:
             lint=data.get("lint", True),
             dead_code=data.get("deadCode", True),
             test_analysis=data.get("testAnalysis", True),
+            coverage_gaps=data.get("coverageGaps", True),
             verbose=data.get("verbose", False),
         )
 
@@ -120,6 +122,7 @@ class Config:
             "lint": self.lint,
             "deadCode": self.dead_code,
             "testAnalysis": self.test_analysis,
+            "coverageGaps": self.coverage_gaps,
             "verbose": self.verbose,
         }
 
