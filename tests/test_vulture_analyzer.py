@@ -2,9 +2,34 @@
 
 from pathlib import Path
 
+import pytest
+
 from pytest_doctor.analyzers.vulture_analyzer import VultureAnalyzer
 from pytest_doctor.config import Config, IgnoreConfig
 from pytest_doctor.models import Severity
+
+
+@pytest.fixture
+def mock_item_with_confidence():
+    """Fixture for mock item with confidence level."""
+
+    class MockItem:
+        def __init__(self, confidence: int):
+            self.confidence = confidence
+
+    return MockItem
+
+
+@pytest.fixture
+def mock_item_with_type_and_name():
+    """Fixture for mock item with type and name."""
+
+    class MockItem:
+        def __init__(self, item_type: str, name: str):
+            self.type = item_type
+            self.name = name
+
+    return MockItem
 
 
 def test_vulture_analyzer_init() -> None:
@@ -47,46 +72,35 @@ def test_something():
     assert result.duration_ms > 0
 
 
-def test_vulture_analyzer_map_severity() -> None:
+def test_vulture_analyzer_map_severity(mock_item_with_confidence) -> None:
     """Test severity mapping based on confidence."""
     analyzer = VultureAnalyzer()
 
-    # Create mock items with different confidence levels
-    class MockItem:
-        def __init__(self, confidence: int):
-            self.confidence = confidence
-
     # High confidence should map to WARNING
-    high_conf = MockItem(85)
+    high_conf = mock_item_with_confidence(85)
     assert analyzer._map_severity(high_conf) == Severity.WARNING
 
     # Low confidence should map to INFO
-    low_conf = MockItem(50)
+    low_conf = mock_item_with_confidence(50)
     assert analyzer._map_severity(low_conf) == Severity.INFO
 
 
-def test_vulture_analyzer_get_recommendation() -> None:
+def test_vulture_analyzer_get_recommendation(mock_item_with_type_and_name) -> None:
     """Test recommendation generation for different item types."""
     analyzer = VultureAnalyzer()
 
-    # Create mock items with different types
-    class MockItem:
-        def __init__(self, item_type: str, name: str):
-            self.type = item_type
-            self.name = name
-
     # Test different types
-    func_item = MockItem("function", "test_helper")
+    func_item = mock_item_with_type_and_name("function", "test_helper")
     assert "function" in analyzer._get_recommendation(func_item).lower()
     assert "test_helper" in analyzer._get_recommendation(func_item)
 
-    var_item = MockItem("variable", "temp_var")
+    var_item = mock_item_with_type_and_name("variable", "temp_var")
     assert "variable" in analyzer._get_recommendation(var_item).lower()
 
-    class_item = MockItem("class", "UnusedClass")
+    class_item = mock_item_with_type_and_name("class", "UnusedClass")
     assert "class" in analyzer._get_recommendation(class_item).lower()
 
-    import_item = MockItem("import", "os")
+    import_item = mock_item_with_type_and_name("import", "os")
     assert "import" in analyzer._get_recommendation(import_item).lower()
 
 

@@ -116,50 +116,23 @@ class TestAgentContext:
 class TestAgentOutput:
     """Tests for AgentOutput."""
 
-    def test_agent_output_creation(self) -> None:
+    def test_agent_output_creation(self, agent_context_with_issues, single_fix_suggestion) -> None:
         """Test creating an agent output."""
-        context = AgentContext(
-            project_path=".",
-            health_score=75,
-            total_issues=2,
-            critical_count=0,
-            warning_count=1,
-            info_count=1,
-        )
-        suggestions = [
-            AgentFixSuggestion(
-                file_path="tests/test_example.py",
-                line_number=10,
-                rule_id="E501",
-                rule_name="Line too long",
-                message="Test",
-                severity="warning",
-                recommendation="Fix",
-            ),
-        ]
         deeplinks = {"documentation": "https://example.com"}
 
         output = AgentOutput(
-            context=context,
-            suggestions=suggestions,
+            context=agent_context_with_issues,
+            suggestions=[single_fix_suggestion],
             deeplinks=deeplinks,
         )
-        assert output.context.health_score == 75
+        assert output.context.health_score == 50
         assert len(output.suggestions) == 1
         assert output.deeplinks == deeplinks
 
-    def test_agent_output_to_dict_without_suggestions(self) -> None:
+    def test_agent_output_to_dict_without_suggestions(self, agent_context_minimal) -> None:
         """Test converting empty agent output to dict."""
-        context = AgentContext(
-            project_path=".",
-            health_score=100,
-            total_issues=0,
-            critical_count=0,
-            warning_count=0,
-            info_count=0,
-        )
         output = AgentOutput(
-            context=context,
+            context=agent_context_minimal,
             suggestions=[],
             deeplinks={},
         )
@@ -167,47 +140,21 @@ class TestAgentOutput:
         assert output_dict["context"]["health_score"] == 100
         assert output_dict["suggestions"] == []
 
-    def test_agent_output_to_dict_with_suggestions(self) -> None:
+    def test_agent_output_to_dict_with_suggestions(
+        self, agent_context_with_issues, multiple_fix_suggestions
+    ) -> None:
         """Test converting agent output with suggestions to dict."""
-        context = AgentContext(
-            project_path=".",
-            health_score=50,
-            total_issues=2,
-            critical_count=1,
-            warning_count=1,
-            info_count=0,
-        )
-        suggestions = [
-            AgentFixSuggestion(
-                file_path="src/main.py",
-                line_number=5,
-                rule_id="E501",
-                rule_name="Line too long",
-                message="Line is too long",
-                severity="critical",
-                recommendation="Shorten the line",
-            ),
-            AgentFixSuggestion(
-                file_path="src/utils.py",
-                line_number=15,
-                rule_id="F401",
-                rule_name="Unused import",
-                message="Import is unused",
-                severity="warning",
-                recommendation="Remove import",
-            ),
-        ]
         deeplinks = {
             "documentation": "https://example.com",
             "fix_guide": "https://example.com/fix",
         }
         output = AgentOutput(
-            context=context,
-            suggestions=suggestions,
+            context=agent_context_with_issues,
+            suggestions=multiple_fix_suggestions,
             deeplinks=deeplinks,
         )
         output_dict = output.to_dict()
-        assert output_dict["context"]["critical_count"] == 1
+        assert output_dict["context"]["critical_count"] == 3
         assert len(output_dict["suggestions"]) == 2
         assert output_dict["suggestions"][0]["rule_id"] == "E501"
         assert output_dict["deeplinks"] == deeplinks

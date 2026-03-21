@@ -3,6 +3,8 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 from pytest_doctor.analyzers.quality_analyzer import QualityAnalyzer
 from pytest_doctor.config import Config, IgnoreConfig
 from pytest_doctor.models import IssueSource
@@ -94,12 +96,13 @@ def test_multiple_values():
     assert any(issue.rule_id == "missing-parametrization" for issue in issues)
 
 
-def test_quality_analyzer_check_large_test(tmp_path: Path) -> None:
-    """Test detecting large tests."""
+@pytest.mark.parametrize("num_lines", [25, 30, 40, 50])
+def test_quality_analyzer_check_large_test(tmp_path: Path, num_lines: int) -> None:
+    """Test detecting large tests with different sizes."""
     test_file = tmp_path / "test_large.py"
     # Create a test with many lines
     lines = ["def test_large():"]
-    for i in range(30):
+    for i in range(num_lines):
         lines.append(f"    x{i} = {i}")
     lines.append("    assert True")
 
@@ -108,8 +111,9 @@ def test_quality_analyzer_check_large_test(tmp_path: Path) -> None:
     analyzer = QualityAnalyzer()
     issues = analyzer._analyze_file(test_file)
 
-    # Should find a large test issue
-    assert any(issue.rule_id == "large-test" for issue in issues)
+    # Should find a large test issue for any test > 20 lines
+    if num_lines > 20:
+        assert any(issue.rule_id == "large-test" for issue in issues)
 
 
 def test_quality_analyzer_analyze_with_real_file(tmp_path: Path) -> None:

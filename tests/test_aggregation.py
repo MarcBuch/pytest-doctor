@@ -68,26 +68,12 @@ class TestResultsAggregator:
         assert "test_example.py" in result.by_file
         assert result.summary["warning"] == 1
 
-    def test_aggregate_multiple_engines(self) -> None:
+    def test_aggregate_multiple_engines(
+        self, analysis_result_with_warning, analysis_result_with_info
+    ) -> None:
         """Test aggregating results from multiple engines."""
         aggregator = ResultsAggregator()
-        issue1 = Issue(
-            file_path="test_example.py",
-            line_number=10,
-            rule_id="E501",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
-        issue2 = Issue(
-            file_path="test_example.py",
-            line_number=15,
-            rule_id="unused_fixture",
-            severity=Severity.INFO,
-            source=IssueSource.DEAD_CODE,
-        )
-        result1 = AnalysisResult(engine="ruff", issues=[issue1])
-        result2 = AnalysisResult(engine="vulture", issues=[issue2])
-        aggregated = aggregator.aggregate([result1, result2])
+        aggregated = aggregator.aggregate([analysis_result_with_warning, analysis_result_with_info])
         assert len(aggregated.all_issues) == 2
         assert aggregated.summary["warning"] == 1
         assert aggregated.summary["info"] == 1
@@ -111,30 +97,9 @@ class TestResultsAggregator:
         assert len(aggregated.all_issues) == 1
         assert aggregated.summary["warning"] == 1
 
-    def test_sort_by_severity(self) -> None:
+    def test_sort_by_severity(self, issue_info, issue_warning, issue_critical) -> None:
         """Test issues are sorted by severity."""
         aggregator = ResultsAggregator()
-        issue_info = Issue(
-            file_path="test_a.py",
-            line_number=10,
-            rule_id="info",
-            severity=Severity.INFO,
-            source=IssueSource.LINTING,
-        )
-        issue_warning = Issue(
-            file_path="test_b.py",
-            line_number=20,
-            rule_id="warning",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
-        issue_critical = Issue(
-            file_path="test_c.py",
-            line_number=30,
-            rule_id="critical",
-            severity=Severity.CRITICAL,
-            source=IssueSource.LINTING,
-        )
         result = AnalysisResult(
             engine="ruff",
             issues=[issue_info, issue_warning, issue_critical],
