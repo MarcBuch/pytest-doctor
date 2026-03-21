@@ -7,6 +7,7 @@ from typing import Optional
 import click
 
 from pytest_doctor import __version__
+from pytest_doctor.config import load_config
 
 
 @click.command()
@@ -37,11 +38,20 @@ def main(
         click.echo(f"pytest-doctor {__version__}")
         return
 
+    # Load configuration from files and merge with CLI flags
+    config = load_config(path, verbose=verbose)
+
     # TODO: Implement the actual analysis logic
     if not (output_json or output):
         click.echo(f"Scanning: {path}")
-        if verbose:
+        if config.verbose:
             click.echo("Verbose mode enabled")
+        if config.lint:
+            click.echo("Linting enabled")
+        if config.dead_code:
+            click.echo("Dead code detection enabled")
+        if config.test_analysis:
+            click.echo("Test analysis enabled")
         if fix:
             click.echo("Fix mode enabled")
         if diff:
