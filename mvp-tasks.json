@@ -311,24 +311,24 @@
            ],
            "status": "completed"
          },
-        {
-          "id": "docs-001",
-          "title": "Create usage documentation",
-          "description": "Document CLI usage, configuration, and integration with agents",
-          "acceptance_criteria": [
-            "README has installation instructions",
-            "Configuration options documented",
-            "CLI flags documented with examples",
-            "Agent integration examples provided",
-            "JSON schema documented"
-          ],
-          "estimated_effort": "medium",
-          "depends_on": [
-            "output-001",
-            "output-002"
-          ],
-          "status": "pending"
-        }
+         {
+           "id": "docs-001",
+           "title": "Create usage documentation",
+           "description": "Document CLI usage, configuration, and integration with agents",
+           "acceptance_criteria": [
+             "README has installation instructions",
+             "Configuration options documented",
+             "CLI flags documented with examples",
+             "Agent integration examples provided",
+             "JSON schema documented"
+           ],
+           "estimated_effort": "medium",
+           "depends_on": [
+             "output-001",
+             "output-002"
+           ],
+           "status": "completed"
+         }
       ]
     }
   ],
