@@ -11,6 +11,7 @@ from pytest_doctor import __version__
 from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
 from pytest_doctor.analyzers import QualityAnalyzer, RuffAnalyzer, VultureAnalyzer
 from pytest_doctor.config import load_config
+from pytest_doctor.git_utils import GitDiffHandler
 from pytest_doctor.models import DiagnosticReport
 from pytest_doctor.scoring import HealthScorer
 
@@ -133,6 +134,31 @@ def main(
         # Aggregate results
         aggregator = ResultsAggregator()
         aggregated = aggregator.aggregate([r for r in results if r is not None])
+
+        # Filter by changed files if --diff flag is used
+        if diff:
+            git_handler = GitDiffHandler(path)
+
+            # Check if git is available and ref exists
+            if git_handler.is_git_repo():
+                if git_handler.ref_exists(diff):
+                    changed_files = git_handler.get_changed_files(diff)
+                    if changed_files:
+                        if config.verbose:
+                            click.echo(f"Found {len(changed_files)} changed files", err=True)
+                        aggregated = aggregator.filter_by_files(aggregated, changed_files)
+                    else:
+                        if config.verbose:
+                            click.echo(
+                                f"No changed files found relative to {diff}",
+                                err=True,
+                            )
+                else:
+                    if not (output_json or output):
+                        click.echo(f"Warning: Git ref '{diff}' not found", err=True)
+            else:
+                if not (output_json or output):
+                    click.echo("Warning: Not a git repository", err=True)
 
         # Calculate health score
         scorer = HealthScorer()

@@ -38,6 +38,40 @@ class ResultsAggregator:
         """Initialize the results aggregator."""
         pass
 
+    def filter_by_files(
+        self, aggregated: AggregatedIssues, changed_files: set[str]
+    ) -> AggregatedIssues:
+        """
+        Filter aggregated issues to only those in changed files.
+
+        Args:
+            aggregated: The aggregated issues to filter
+            changed_files: Set of changed file paths
+
+        Returns:
+            New AggregatedIssues with only issues in changed files
+        """
+        # Filter issues by file
+        filtered_issues = [
+            issue for issue in aggregated.all_issues if issue.file_path in changed_files
+        ]
+
+        # Recalculate summary
+        summary = {"critical": 0, "warning": 0, "info": 0}
+        for issue in filtered_issues:
+            severity_key = issue.severity.value
+            if severity_key in summary:
+                summary[severity_key] += 1
+
+        # Group by file
+        by_file = {}
+        for issue in filtered_issues:
+            if issue.file_path not in by_file:
+                by_file[issue.file_path] = []
+            by_file[issue.file_path].append(issue)
+
+        return AggregatedIssues(by_file=by_file, all_issues=filtered_issues, summary=summary)
+
     def aggregate(self, results: list[AnalysisResult]) -> AggregatedIssues:
         """
         Aggregate results from all analysis engines.

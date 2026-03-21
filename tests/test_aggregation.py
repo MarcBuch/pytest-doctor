@@ -274,3 +274,75 @@ class TestResultsAggregator:
         deduplicated = aggregator._deduplicate_issues(issues)
         assert len(deduplicated) == 1
         assert deduplicated[0].message == "First message"
+
+    def test_filter_by_files(self) -> None:
+        """Test filtering issues by changed files."""
+        aggregator = ResultsAggregator()
+        issue_a = Issue(
+            file_path="test_a.py",
+            line_number=10,
+            rule_id="E501",
+            severity=Severity.WARNING,
+            source=IssueSource.LINTING,
+        )
+        issue_b = Issue(
+            file_path="test_b.py",
+            line_number=20,
+            rule_id="E502",
+            severity=Severity.WARNING,
+            source=IssueSource.LINTING,
+        )
+        issue_c = Issue(
+            file_path="test_c.py",
+            line_number=30,
+            rule_id="E503",
+            severity=Severity.WARNING,
+            source=IssueSource.LINTING,
+        )
+        aggregated = AggregatedIssues(
+            by_file={
+                "test_a.py": [issue_a],
+                "test_b.py": [issue_b],
+                "test_c.py": [issue_c],
+            },
+            all_issues=[issue_a, issue_b, issue_c],
+            summary={"critical": 0, "warning": 3, "info": 0},
+        )
+
+        # Filter to only test_a.py and test_c.py
+        changed_files = {"test_a.py", "test_c.py"}
+        filtered = aggregator.filter_by_files(aggregated, changed_files)
+
+        assert len(filtered.all_issues) == 2
+        assert issue_a in filtered.all_issues
+        assert issue_c in filtered.all_issues
+        assert issue_b not in filtered.all_issues
+        assert filtered.summary["warning"] == 2
+        assert len(filtered.by_file) == 2
+        assert "test_a.py" in filtered.by_file
+        assert "test_c.py" in filtered.by_file
+        assert "test_b.py" not in filtered.by_file
+
+    def test_filter_by_files_empty_result(self) -> None:
+        """Test filtering when no files match."""
+        aggregator = ResultsAggregator()
+        issue = Issue(
+            file_path="test.py",
+            line_number=10,
+            rule_id="E501",
+            severity=Severity.WARNING,
+            source=IssueSource.LINTING,
+        )
+        aggregated = AggregatedIssues(
+            by_file={"test.py": [issue]},
+            all_issues=[issue],
+            summary={"critical": 0, "warning": 1, "info": 0},
+        )
+
+        # Filter with no matching files
+        changed_files: set[str] = set()
+        filtered = aggregator.filter_by_files(aggregated, changed_files)
+
+        assert len(filtered.all_issues) == 0
+        assert filtered.summary["warning"] == 0
+        assert len(filtered.by_file) == 0

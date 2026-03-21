@@ -236,22 +236,22 @@
       "name": "Advanced Features",
       "priority": "medium",
       "tasks": [
-        {
-          "id": "diff-001",
-          "title": "Implement --diff flag for changed files",
-          "description": "Support scanning only modified files compared to a git ref (e.g., main branch)",
-          "acceptance_criteria": [
-            "--diff main flag scans only changed files",
-            "Results show only issues in modified lines",
-            "Git integration works reliably",
-            "Performance improved for incremental checks"
-          ],
-          "estimated_effort": "medium",
-          "depends_on": [
-            "setup-002"
-          ],
-          "status": "pending"
-        },
+         {
+           "id": "diff-001",
+           "title": "Implement --diff flag for changed files",
+           "description": "Support scanning only modified files compared to a git ref (e.g., main branch)",
+           "acceptance_criteria": [
+             "--diff main flag scans only changed files",
+             "Results show only issues in modified lines",
+             "Git integration works reliably",
+             "Performance improved for incremental checks"
+           ],
+           "estimated_effort": "medium",
+           "depends_on": [
+             "setup-002"
+           ],
+           "status": "completed"
+         },
         {
           "id": "agent-001",
           "title": "Implement --fix flag for agent integration",
@@ -293,24 +293,24 @@
       "name": "Testing & Documentation",
       "priority": "high",
       "tasks": [
-        {
-          "id": "test-001",
-          "title": "Write comprehensive test suite",
-          "description": "Create unit and integration tests for all major components",
-          "acceptance_criteria": [
-            "Unit tests for scoring system",
-            "Unit tests for analysis engines",
-            "Integration tests for CLI",
-            "Test coverage >80%",
-            "All tests pass"
-          ],
-          "estimated_effort": "large",
-          "depends_on": [
-            "setup-002",
-            "scoring-001"
-          ],
-          "status": "pending"
-        },
+         {
+           "id": "test-001",
+           "title": "Write comprehensive test suite",
+           "description": "Create unit and integration tests for all major components",
+           "acceptance_criteria": [
+             "Unit tests for scoring system",
+             "Unit tests for analysis engines",
+             "Integration tests for CLI",
+             "Test coverage >80%",
+             "All tests pass"
+           ],
+           "estimated_effort": "large",
+           "depends_on": [
+             "setup-002",
+             "scoring-001"
+           ],
+           "status": "completed"
+         },
         {
           "id": "docs-001",
           "title": "Create usage documentation",
