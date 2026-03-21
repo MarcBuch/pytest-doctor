@@ -1,13 +1,70 @@
 """CLI entry point for pytest-doctor."""
 
 import json
+import sys
 from pathlib import Path
 from typing import Optional
 
 import click
 
 from pytest_doctor import __version__
+from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
+from pytest_doctor.analyzers import QualityAnalyzer, RuffAnalyzer, VultureAnalyzer
 from pytest_doctor.config import load_config
+from pytest_doctor.models import DiagnosticReport
+from pytest_doctor.scoring import HealthScorer
+
+
+def _print_report(
+    diagnostic: DiagnosticReport, aggregated: AggregatedIssues, verbose: bool
+) -> None:
+    """Print a human-readable diagnostic report."""
+    # Print header with score
+    click.echo("\n" + "=" * 60)
+    click.echo("pytest-doctor Diagnostic Report")
+    click.echo("=" * 60)
+
+    # Print score with color coding
+    score = diagnostic.score
+    if score >= 75:
+        status = "✓ GOOD"
+    elif score >= 50:
+        status = "⚠ NEEDS WORK"
+    else:
+        status = "✗ CRITICAL"
+
+    click.echo(f"\nHealth Score: {score}/100 [{status}]")
+
+    # Print summary
+    click.echo("\nSummary:")
+    click.echo(f"  Critical: {aggregated.summary['critical']}")
+    click.echo(f"  Warning:  {aggregated.summary['warning']}")
+    click.echo(f"  Info:     {aggregated.summary['info']}")
+    click.echo(f"  Total:    {len(aggregated.all_issues)}")
+
+    # Print issues by file if there are any
+    if aggregated.all_issues:
+        click.echo("\nFindings:")
+        click.echo("-" * 60)
+
+        for file_path, issues in aggregated.by_file.items():
+            click.echo(f"\n{file_path}")
+            for issue in issues:
+                severity_symbol = {
+                    "critical": "✗",
+                    "warning": "⚠",
+                    "info": "ℹ",
+                }.get(issue.severity.value, "•")
+
+                rule_info = f"[{issue.rule_id}]" if issue.rule_id else ""
+                click.echo(
+                    f"  {severity_symbol} Line {issue.line_number}: {issue.message} {rule_info}"
+                )
+
+                if verbose and issue.recommendation:
+                    click.echo(f"    → {issue.recommendation}")
+
+    click.echo("\n" + "=" * 60 + "\n")
 
 
 @click.command()
@@ -41,41 +98,81 @@ def main(
     # Load configuration from files and merge with CLI flags
     config = load_config(path, verbose=verbose)
 
-    # TODO: Implement the actual analysis logic
+    # Show initial message if not JSON output
     if not (output_json or output):
         click.echo(f"Scanning: {path}")
         if config.verbose:
             click.echo("Verbose mode enabled")
-        if config.lint:
-            click.echo("Linting enabled")
-        if config.dead_code:
-            click.echo("Dead code detection enabled")
-        if config.test_analysis:
-            click.echo("Test analysis enabled")
         if fix:
             click.echo("Fix mode enabled")
         if diff:
             click.echo(f"Scanning changed files relative to: {diff}")
 
-    # Placeholder output
-    result = {
-        "version": __version__,
-        "path": path,
-        "score": 0,
-        "issues": [],
-        "summary": {"critical": 0, "warning": 0, "info": 0},
-    }
+    # Run all analysis engines
+    try:
+        results = []
 
-    if output_json or output:
-        output_str = json.dumps(result, indent=2)
-        if output:
-            Path(output).write_text(output_str)
-            click.echo(f"Results written to {output}")
+        if config.lint:
+            if config.verbose:
+                click.echo("Running ruff linting analysis...", err=True)
+            ruff_analyzer = RuffAnalyzer(config)
+            results.append(ruff_analyzer.analyze(path))
+
+        if config.dead_code:
+            if config.verbose:
+                click.echo("Running vulture dead code analysis...", err=True)
+            vulture_analyzer = VultureAnalyzer(config)
+            results.append(vulture_analyzer.analyze(path))
+
+        if config.test_analysis:
+            if config.verbose:
+                click.echo("Running test quality analysis...", err=True)
+            quality_analyzer = QualityAnalyzer(config)
+            results.append(quality_analyzer.analyze(path))
+
+        # Aggregate results
+        aggregator = ResultsAggregator()
+        aggregated = aggregator.aggregate([r for r in results if r is not None])
+
+        # Calculate health score
+        scorer = HealthScorer()
+        score = scorer.calculate_score([r for r in results if r is not None])
+
+        # Create diagnostic report
+        diagnostic = DiagnosticReport(
+            path=path,
+            score=score,
+            results=results,
+            summary=aggregated.summary,
+            total_issues=len(aggregated.all_issues),
+        )
+
+        # Output results
+        if output_json or output:
+            output_dict = diagnostic.to_dict()
+            # Add version and other metadata
+            output_dict["version"] = __version__
+            # Add aggregated issues by file
+            output_dict["issues"] = aggregated.to_dict()["by_file"]
+            output_dict["all_issues"] = [issue.to_dict() for issue in aggregated.all_issues]
+
+            output_str = json.dumps(output_dict, indent=2)
+            if output:
+                Path(output).write_text(output_str)
+                click.echo(f"Results written to {output}")
+            else:
+                click.echo(output_str)
         else:
-            click.echo(output_str)
-    else:
-        click.echo("pytest-doctor initialized successfully!")
-        click.echo(f"Health Score: {result['score']}/100")
+            # Human-readable output
+            _print_report(diagnostic, aggregated, config.verbose)
+
+    except Exception as e:
+        if config.verbose:
+            click.echo(f"Error during analysis: {e}", err=True)
+            import traceback
+
+            traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

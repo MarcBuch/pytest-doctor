@@ -151,40 +151,40 @@
           "status": "completed"
         },
         {
-          "id": "aggregation-001",
-          "title": "Implement results aggregation",
-          "description": "Combine results from all three analysis engines with deduplication and prioritization",
-          "acceptance_criteria": [
-            "Results are combined from all three analysis engines",
-            "Duplicate issues are removed",
-            "Results are prioritized by severity",
-            "Each result includes source (linting/dead-code/quality)",
-            "Results are grouped by file for better presentation"
-          ],
-          "estimated_effort": "medium",
-          "depends_on": [
-            "linting-001",
-            "deadcode-001",
-            "analysis-001",
-            "analysis-002"
-          ],
-          "status": "in_progress"
+           "id": "aggregation-001",
+           "title": "Implement results aggregation",
+           "description": "Combine results from all three analysis engines with deduplication and prioritization",
+           "acceptance_criteria": [
+             "Results are combined from all three analysis engines",
+             "Duplicate issues are removed",
+             "Results are prioritized by severity",
+             "Each result includes source (linting/dead-code/quality)",
+             "Results are grouped by file for better presentation"
+           ],
+           "estimated_effort": "medium",
+           "depends_on": [
+             "linting-001",
+             "deadcode-001",
+             "analysis-001",
+             "analysis-002"
+           ],
+           "status": "completed"
         },
         {
-          "id": "recommendations-001",
-          "title": "Implement actionable recommendations system",
-          "description": "Generate structured, agent-friendly recommendations for each detected issue",
-          "acceptance_criteria": [
-            "Each issue has a clear, actionable recommendation",
-            "Recommendations are formatted for easy agent consumption",
-            "Recommendations include suggested fixes or improvements",
-            "Priority levels guide agent fix ordering"
-          ],
-          "estimated_effort": "medium",
-          "depends_on": [
-            "aggregation-001"
-          ],
-          "status": "in_progress"
+           "id": "recommendations-001",
+           "title": "Implement actionable recommendations system",
+           "description": "Generate structured, agent-friendly recommendations for each detected issue",
+           "acceptance_criteria": [
+             "Each issue has a clear, actionable recommendation",
+             "Recommendations are formatted for easy agent consumption",
+             "Recommendations include suggested fixes or improvements",
+             "Priority levels guide agent fix ordering"
+           ],
+           "estimated_effort": "medium",
+           "depends_on": [
+             "aggregation-001"
+           ],
+           "status": "completed"
         }
       ]
     },
@@ -194,40 +194,40 @@
       "priority": "high",
       "tasks": [
         {
-          "id": "output-001",
-          "title": "Implement human-readable console output",
-          "description": "Create formatted terminal output with health score, summary, and detailed findings",
-          "acceptance_criteria": [
-            "Displays overall health score prominently",
-            "Shows summary of findings by category",
-            "Includes detailed issue list with file paths and line numbers",
-            "Color-coded severity levels (Critical/Warning/Info)",
-            "Respects --verbose flag for additional detail"
-          ],
-          "estimated_effort": "medium",
-          "depends_on": [
-            "scoring-001",
-            "recommendations-001"
-          ],
-          "status": "pending"
+           "id": "output-001",
+           "title": "Implement human-readable console output",
+           "description": "Create formatted terminal output with health score, summary, and detailed findings",
+           "acceptance_criteria": [
+             "Displays overall health score prominently",
+             "Shows summary of findings by category",
+             "Includes detailed issue list with file paths and line numbers",
+             "Color-coded severity levels (Critical/Warning/Info)",
+             "Respects --verbose flag for additional detail"
+           ],
+           "estimated_effort": "medium",
+           "depends_on": [
+             "scoring-001",
+             "recommendations-001"
+           ],
+           "status": "completed"
         },
         {
-          "id": "output-002",
-          "title": "Implement JSON output format",
-          "description": "Create structured JSON output for agent integration via --json flag and --output parameter",
-          "acceptance_criteria": [
-            "--json flag outputs complete diagnostics in JSON",
-            "--output flag writes JSON to specified file",
-            "JSON includes all issues, severity, file paths, line numbers, recommendations",
-            "JSON schema is documented and stable",
-            "JSON output is parseable by external agents"
-          ],
-          "estimated_effort": "small",
-          "depends_on": [
-            "aggregation-001",
-            "recommendations-001"
-          ],
-          "status": "pending"
+           "id": "output-002",
+           "title": "Implement JSON output format",
+           "description": "Create structured JSON output for agent integration via --json flag and --output parameter",
+           "acceptance_criteria": [
+             "--json flag outputs complete diagnostics in JSON",
+             "--output flag writes JSON to specified file",
+             "JSON includes all issues, severity, file paths, line numbers, recommendations",
+             "JSON schema is documented and stable",
+             "JSON output is parseable by external agents"
+           ],
+           "estimated_effort": "small",
+           "depends_on": [
+             "aggregation-001",
+             "recommendations-001"
+           ],
+           "status": "completed"
         }
       ]
     },
