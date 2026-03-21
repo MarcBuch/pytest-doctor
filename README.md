@@ -1,84 +1,86 @@
 # pytest-doctor
 
-Intelligent test analysis and reporting for pytest-based projects.
+`pytest-doctor` is a CLI tool that diagnoses weak or broken pytest suites and provides a **0–100 health score** with actionable recommendations.
 
-## Development
+It combines linting, dead code detection, and test quality analysis to pinpoint gaps in test coverage, isolation issues, and performance problems—then integrates with coding agents for automated fixes.
 
-This project uses `uv` for dependency and environment management.
+## Core Capabilities
 
-### Getting Started
+- **Gap analysis**: highlights what your tests miss (logic paths, edge cases, and risk areas)
+- **Test quality checks**: detects fixture usage issues, isolation problems, missing parametrization
+- **Dead code detection**: finds unused test utilities, fixtures, and helper functions
+- **Scoring system**: 0–100 health metric (Critical <50, Needs work 50–74, Good 75+)
+- **Agent-friendly output**: structured recommendations that coding agents can apply directly
 
-```bash
-# Install dependencies and set up the virtual environment
-uv sync
-```
-
-### Standard Developer Commands
-
-The following commands are the primary workflows for development:
+## Quick Start
 
 ```bash
-# Run tests
-uv run pytest
+# Scan your project
+pytest-doctor .
 
-# Run linting (check code style, imports, and common issues)
-uv run ruff check .
+# Verbose mode with detailed paths
+pytest-doctor . --verbose
 
-# Run type checking
-uv run mypy src
+# Scan only changed files
+pytest-doctor . --diff main
 
-# Run coverage analysis
-uv run coverage run -m pytest && uv run coverage report
-
-# Format code (auto-fix style issues)
-uv run ruff format .
+# Request automated fixes via agent
+pytest-doctor . --fix
 ```
 
-### CI Parity
+## Configuration
 
-The CI pipeline runs the following commands on every push and pull request:
+Configure via `pytest-doctor.config.json`, `pyproject.toml`, or CLI flags:
+
+```json
+{
+  "ignore": {
+    "rules": ["custom/slow-test", "E501"],
+    "files": ["tests/legacy/**"]
+  },
+  "lint": true,
+  "deadCode": true,
+  "testAnalysis": true,
+  "verbose": false
+}
+```
+
+## Architecture
+
+The tool runs **three parallel analysis passes**:
+
+1. **Linting** (ruff) – detects correctness, performance, security, and async issues
+2. **Dead code detection** (vulture) – finds unused test utilities and fixtures
+3. **Test quality** – flags isolation issues, missing parametrization, slow tests
+
+Results are aggregated, scored, and rendered with actionable recommendations.
+
+## Agent Integration
+
+### Deeplinks (Remote Agents)
+
+Generates deeplinks for remote coding agents to apply fixes automatically:
 
 ```bash
-# Lint check
-uv run ruff check .
-
-# Format check
-uv run ruff format . --check
-
-# Type checking
-uv run mypy src
-
-# Tests with coverage
-uv run pytest --cov=src/pytest_doctor --cov-report=xml --cov-report=term-missing
+pytest-doctor . --fix
+# Opens agent with diagnostics and project context
 ```
 
-To verify your changes will pass CI locally, run:
+### Local Agent Integration
+
+For local coding agents, use structured JSON output via stdin:
 
 ```bash
-uv run ruff check .
-uv run ruff format . --check
-uv run mypy src
-uv run pytest --cov=src/pytest_doctor --cov-report=term-missing
+# Pipe diagnostics to your local agent
+pytest-doctor . --json | your-agent --fix
+
+# Or write to a temporary file
+pytest-doctor . --output /tmp/diagnostics.json
+your-agent /tmp/diagnostics.json --fix
 ```
 
-### Useful Aliases
+The `--json` flag outputs complete diagnostics (issues, severity, file paths, line numbers) in a structured format that any agent can parse and act on.
 
-You can add these to your shell profile for convenience:
-```bash
-alias pytest-doctor-lint="uv run ruff check ."
-alias pytest-doctor-type="uv run mypy src"
-alias pytest-doctor-test="uv run pytest"
-alias pytest-doctor-coverage="uv run coverage run -m pytest && uv run coverage report"
-```
+---
 
-### Project Structure
-
-```
-src/pytest_doctor/
-├── analyzers/        # Test and code analysis modules
-├── scoring/          # Metrics calculation and scoring
-├── reporter/         # Output formatting and reporting
-├── cli/              # Command-line interface
-└── __init__.py       # Package initialization
-tests/                # Test suite
-```
+**Goal**: let agents not only make tests pass, but make tests trustworthy.
