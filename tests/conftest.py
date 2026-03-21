@@ -228,3 +228,34 @@ def analysis_result_with_info(issue_info):
 def analysis_result_with_critical(issue_critical):
     """Fixture for analysis result with critical issue."""
     return AnalysisResult(engine="ruff", issues=[issue_critical])
+
+
+@pytest.fixture
+def formatter_diagnostic_with_critical():
+    """Fixture for diagnostic report with critical issue."""
+    return DiagnosticReport(
+        path=".",
+        score=75,
+        results=[],
+        summary={"critical": 1, "warning": 2, "info": 3},
+        total_issues=6,
+    )
+
+
+@pytest.fixture
+def formatter_aggregated_with_critical():
+    """Fixture for aggregated issues with critical issue."""
+    return AggregatedIssues(
+        all_issues=[
+            Issue(
+                file_path="tests/test_example.py",
+                line_number=10,
+                message="Critical issue",
+                severity=Severity.CRITICAL,
+                source=IssueSource.LINTING,
+                recommendation="Fix this",
+            ),
+        ],
+        by_file={"tests/test_example.py": []},
+        summary={"critical": 1, "warning": 2, "info": 3},
+    )

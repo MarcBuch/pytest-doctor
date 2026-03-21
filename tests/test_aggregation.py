@@ -4,6 +4,27 @@ from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
 from pytest_doctor.models import AnalysisResult, Issue, IssueSource, Severity
 
 
+def _make_issue(
+    file_path: str = "test.py",
+    line_number: int = 1,
+    rule_id: str = "E501",
+    severity: Severity = Severity.WARNING,
+    source: IssueSource = IssueSource.LINTING,
+    message: str = "Test message",
+    column_number: int = 5,
+) -> Issue:
+    """Helper to create an issue with default values."""
+    return Issue(
+        file_path=file_path,
+        line_number=line_number,
+        column_number=column_number,
+        rule_id=rule_id,
+        message=message,
+        severity=severity,
+        source=source,
+    )
+
+
 class TestAggregatedIssues:
     """Tests for AggregatedIssues dataclass."""
 
@@ -113,27 +134,9 @@ class TestResultsAggregator:
     def test_group_by_file(self) -> None:
         """Test issues are grouped by file."""
         aggregator = ResultsAggregator()
-        issue1 = Issue(
-            file_path="test_a.py",
-            line_number=10,
-            rule_id="E501",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
-        issue2 = Issue(
-            file_path="test_a.py",
-            line_number=20,
-            rule_id="E502",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
-        issue3 = Issue(
-            file_path="test_b.py",
-            line_number=30,
-            rule_id="E501",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
+        issue1 = _make_issue(file_path="test_a.py", line_number=10)
+        issue2 = _make_issue(file_path="test_a.py", line_number=20, rule_id="E502")
+        issue3 = _make_issue(file_path="test_b.py", line_number=30)
         result = AnalysisResult(engine="ruff", issues=[issue1, issue2, issue3])
         aggregated = aggregator.aggregate([result])
         assert len(aggregated.by_file) == 2
@@ -144,34 +147,10 @@ class TestResultsAggregator:
         """Test summary calculation."""
         aggregator = ResultsAggregator()
         issues = [
-            Issue(
-                file_path="test.py",
-                line_number=1,
-                rule_id="C1",
-                severity=Severity.CRITICAL,
-                source=IssueSource.LINTING,
-            ),
-            Issue(
-                file_path="test.py",
-                line_number=2,
-                rule_id="C2",
-                severity=Severity.CRITICAL,
-                source=IssueSource.LINTING,
-            ),
-            Issue(
-                file_path="test.py",
-                line_number=3,
-                rule_id="W1",
-                severity=Severity.WARNING,
-                source=IssueSource.LINTING,
-            ),
-            Issue(
-                file_path="test.py",
-                line_number=4,
-                rule_id="I1",
-                severity=Severity.INFO,
-                source=IssueSource.LINTING,
-            ),
+            _make_issue(line_number=1, rule_id="C1", severity=Severity.CRITICAL),
+            _make_issue(line_number=2, rule_id="C2", severity=Severity.CRITICAL),
+            _make_issue(line_number=3, rule_id="W1", severity=Severity.WARNING),
+            _make_issue(line_number=4, rule_id="I1", severity=Severity.INFO),
         ]
         result = AnalysisResult(engine="ruff", issues=issues)
         aggregated = aggregator.aggregate([result])
@@ -182,27 +161,9 @@ class TestResultsAggregator:
     def test_collect_all_issues(self) -> None:
         """Test collecting issues from multiple results."""
         aggregator = ResultsAggregator()
-        issue1 = Issue(
-            file_path="test.py",
-            line_number=1,
-            rule_id="R1",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
-        issue2 = Issue(
-            file_path="test.py",
-            line_number=2,
-            rule_id="R2",
-            severity=Severity.WARNING,
-            source=IssueSource.DEAD_CODE,
-        )
-        issue3 = Issue(
-            file_path="test.py",
-            line_number=3,
-            rule_id="R3",
-            severity=Severity.WARNING,
-            source=IssueSource.TEST_QUALITY,
-        )
+        issue1 = _make_issue(line_number=1, rule_id="R1", source=IssueSource.LINTING)
+        issue2 = _make_issue(line_number=2, rule_id="R2", source=IssueSource.DEAD_CODE)
+        issue3 = _make_issue(line_number=3, rule_id="R3", source=IssueSource.TEST_QUALITY)
         results = [
             AnalysisResult(engine="ruff", issues=[issue1]),
             AnalysisResult(engine="vulture", issues=[issue2]),
@@ -217,24 +178,8 @@ class TestResultsAggregator:
     def test_deduplicate_keeps_first_occurrence(self) -> None:
         """Test deduplication keeps first occurrence."""
         aggregator = ResultsAggregator()
-        issue1 = Issue(
-            file_path="test.py",
-            line_number=10,
-            column_number=5,
-            rule_id="E501",
-            message="First message",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
-        issue2 = Issue(
-            file_path="test.py",
-            line_number=10,
-            column_number=5,
-            rule_id="E501",
-            message="Second message",
-            severity=Severity.WARNING,
-            source=IssueSource.LINTING,
-        )
+        issue1 = _make_issue(line_number=10, message="First message")
+        issue2 = _make_issue(line_number=10, message="Second message")
         issues = [issue1, issue2]
         deduplicated = aggregator._deduplicate_issues(issues)
         assert len(deduplicated) == 1

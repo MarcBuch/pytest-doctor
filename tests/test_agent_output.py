@@ -253,95 +253,40 @@ class TestAgentOutputFormatter:
 
         assert len(agent_output.suggestions) == 2
 
-    def test_agent_output_to_dict(self) -> None:
+    def test_agent_output_to_dict(
+        self, formatter_diagnostic_with_critical, formatter_aggregated_with_critical
+    ) -> None:
         """Test converting agent output to dict."""
         formatter = AgentOutputFormatter()
-        diagnostic = DiagnosticReport(
-            path=".",
-            score=75,
-            results=[],
-            summary={"critical": 1, "warning": 2, "info": 3},
-            total_issues=6,
+        agent_output = formatter.format_for_agent(
+            formatter_diagnostic_with_critical, formatter_aggregated_with_critical
         )
-        aggregated = AggregatedIssues(
-            all_issues=[
-                Issue(
-                    file_path="tests/test_example.py",
-                    line_number=10,
-                    message="Critical issue",
-                    severity=Severity.CRITICAL,
-                    source=IssueSource.LINTING,
-                    recommendation="Fix this",
-                ),
-            ],
-            by_file={"tests/test_example.py": []},
-            summary={"critical": 1, "warning": 2, "info": 3},
-        )
-
-        agent_output = formatter.format_for_agent(diagnostic, aggregated)
         output_dict = agent_output.to_dict()
 
         assert output_dict["context"]["health_score"] == 75
         assert output_dict["context"]["critical_count"] == 1
 
-    def test_agent_output_to_dict_has_suggestions(self) -> None:
+    def test_agent_output_to_dict_has_suggestions(
+        self, formatter_diagnostic_with_critical, formatter_aggregated_with_critical
+    ) -> None:
         """Test to_dict includes suggestions."""
         formatter = AgentOutputFormatter()
-        diagnostic = DiagnosticReport(
-            path=".",
-            score=75,
-            results=[],
-            summary={"critical": 1, "warning": 2, "info": 3},
-            total_issues=6,
+        agent_output = formatter.format_for_agent(
+            formatter_diagnostic_with_critical, formatter_aggregated_with_critical
         )
-        aggregated = AggregatedIssues(
-            all_issues=[
-                Issue(
-                    file_path="tests/test_example.py",
-                    line_number=10,
-                    message="Critical issue",
-                    severity=Severity.CRITICAL,
-                    source=IssueSource.LINTING,
-                    recommendation="Fix this",
-                ),
-            ],
-            by_file={"tests/test_example.py": []},
-            summary={"critical": 1, "warning": 2, "info": 3},
-        )
-
-        agent_output = formatter.format_for_agent(diagnostic, aggregated)
         output_dict = agent_output.to_dict()
 
         assert len(output_dict["suggestions"]) == 1
         assert "deeplinks" in output_dict
 
-    def test_deeplinks_are_created(self) -> None:
+    def test_deeplinks_are_created(
+        self, formatter_diagnostic_with_critical, formatter_aggregated_with_critical
+    ) -> None:
         """Test deeplinks are created."""
         formatter = AgentOutputFormatter()
-        diagnostic = DiagnosticReport(
-            path="/project/path",
-            score=50,
-            results=[],
-            summary={"critical": 1, "warning": 0, "info": 0},
-            total_issues=1,
+        agent_output = formatter.format_for_agent(
+            formatter_diagnostic_with_critical, formatter_aggregated_with_critical
         )
-        aggregated = AggregatedIssues(
-            all_issues=[
-                Issue(
-                    file_path="tests/test_example.py",
-                    line_number=10,
-                    message="Critical issue",
-                    severity=Severity.CRITICAL,
-                    source=IssueSource.LINTING,
-                    recommendation="Fix this",
-                ),
-            ],
-            by_file={"tests/test_example.py": []},
-            summary={"critical": 1, "warning": 0, "info": 0},
-        )
-
-        agent_output = formatter.format_for_agent(diagnostic, aggregated)
-
         assert len(agent_output.deeplinks) > 0
 
     def test_deeplinks_have_documentation(self) -> None:
