@@ -1,0 +1,355 @@
+{
+  "project": "pytest-doctor",
+  "description": "A CLI tool that diagnoses weak or broken pytest suites and provides a 0-100 health score with actionable recommendations",
+  "mvp_phases": [
+    {
+      "phase": 1,
+      "name": "Project Setup & Infrastructure",
+      "priority": "critical",
+      "tasks": [
+        {
+          "id": "setup-001",
+          "title": "Initialize Python project with uv package manager",
+          "description": "Set up pyproject.toml with uv, define dependencies (pytest, ruff, vulture, click, etc.)",
+          "acceptance_criteria": [
+            "Project has uv.lock and pyproject.toml configured",
+            "uv can install and run the project",
+            "All core dependencies are specified"
+          ],
+          "estimated_effort": "small",
+          "depends_on": [],
+          "status": "completed"
+        },
+        {
+          "id": "setup-002",
+          "title": "Create CLI entry point",
+          "description": "Build the main CLI interface using Click framework with basic argument parsing",
+          "acceptance_criteria": [
+            "CLI accepts directory path as input",
+            "CLI supports --verbose, --fix, --diff, --json, --output flags",
+            "pytest-doctor . command runs without errors"
+          ],
+          "estimated_effort": "small",
+          "depends_on": [
+            "setup-001"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "setup-003",
+          "title": "Implement configuration system",
+          "description": "Support configuration from pytest-doctor.config.json, pyproject.toml, and CLI flags with proper precedence",
+          "acceptance_criteria": [
+            "Config loaded from pytest-doctor.config.json when present",
+            "Config loaded from pyproject.toml [tool.pytest-doctor] section",
+            "CLI flags override config file settings",
+            "Default configuration is applied when no config present"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "setup-002"
+          ],
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Analysis Engines",
+      "priority": "critical",
+      "tasks": [
+        {
+          "id": "linting-001",
+          "title": "Implement Ruff linting integration",
+          "description": "Integrate ruff for correctness, performance, security, and async issue detection in test files",
+          "acceptance_criteria": [
+            "Ruff runs on test files and captures violations",
+            "Results include file paths, line numbers, rule names, and messages",
+            "Can filter results based on ignore configuration",
+            "Respects --diff flag to check only changed files"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "setup-001"
+          ],
+          "status": "ready"
+        },
+        {
+          "id": "deadcode-001",
+          "title": "Implement Vulture dead code detection",
+          "description": "Integrate vulture to find unused test utilities, fixtures, and helper functions",
+          "acceptance_criteria": [
+            "Vulture runs on test files and identifies dead code",
+            "Results include file paths, line numbers, confidence scores, and descriptions",
+            "Can filter results based on ignore configuration",
+            "Distinguishes between truly unused code and false positives"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "setup-001"
+          ],
+          "status": "ready"
+        },
+        {
+          "id": "analysis-001",
+          "title": "Implement test quality analysis engine",
+          "description": "Build custom analysis to detect fixture isolation issues, missing parametrization, slow tests, and coverage gaps",
+          "acceptance_criteria": [
+            "Detects fixture isolation issues (shared state, side effects)",
+            "Identifies tests missing parametrization for multiple cases",
+            "Flags slow/performance-problematic tests",
+            "Highlights missing test coverage for logical paths",
+            "Results include severity levels and line numbers"
+          ],
+          "estimated_effort": "large",
+          "depends_on": [
+            "setup-001"
+          ],
+          "status": "ready"
+        },
+        {
+          "id": "analysis-002",
+          "title": "Implement gap analysis for coverage",
+          "description": "Detect logic paths, edge cases, and risk areas that tests miss",
+          "acceptance_criteria": [
+            "Identifies untested code paths in the project",
+            "Flags edge cases that should be tested",
+            "Highlights high-risk areas with insufficient test coverage",
+            "Provides specific locations and recommendations"
+          ],
+          "estimated_effort": "large",
+          "depends_on": [
+            "setup-001"
+          ],
+          "status": "ready"
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Results Aggregation & Scoring",
+      "priority": "critical",
+      "tasks": [
+        {
+          "id": "scoring-001",
+          "title": "Implement health score calculation",
+          "description": "Create a 0-100 scoring system based on aggregated analysis results with thresholds (Critical <50, Needs work 50-74, Good 75+)",
+          "acceptance_criteria": [
+            "Score ranges from 0-100",
+            "Score considers linting violations, dead code, test quality, and coverage",
+            "Thresholds: Critical <50, Needs work 50-74, Good 75+",
+            "Weight distribution is configurable",
+            "Score calculation is deterministic and reproducible"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "linting-001",
+            "deadcode-001",
+            "analysis-001",
+            "analysis-002"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "aggregation-001",
+          "title": "Implement results aggregation",
+          "description": "Combine results from all three analysis engines with deduplication and prioritization",
+          "acceptance_criteria": [
+            "Results are combined from all three analysis engines",
+            "Duplicate issues are removed",
+            "Results are prioritized by severity",
+            "Each result includes source (linting/dead-code/quality)",
+            "Results are grouped by file for better presentation"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "linting-001",
+            "deadcode-001",
+            "analysis-001",
+            "analysis-002"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "recommendations-001",
+          "title": "Implement actionable recommendations system",
+          "description": "Generate structured, agent-friendly recommendations for each detected issue",
+          "acceptance_criteria": [
+            "Each issue has a clear, actionable recommendation",
+            "Recommendations are formatted for easy agent consumption",
+            "Recommendations include suggested fixes or improvements",
+            "Priority levels guide agent fix ordering"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "aggregation-001"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Output Formatting",
+      "priority": "high",
+      "tasks": [
+        {
+          "id": "output-001",
+          "title": "Implement human-readable console output",
+          "description": "Create formatted terminal output with health score, summary, and detailed findings",
+          "acceptance_criteria": [
+            "Displays overall health score prominently",
+            "Shows summary of findings by category",
+            "Includes detailed issue list with file paths and line numbers",
+            "Color-coded severity levels (Critical/Warning/Info)",
+            "Respects --verbose flag for additional detail"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "scoring-001",
+            "recommendations-001"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "output-002",
+          "title": "Implement JSON output format",
+          "description": "Create structured JSON output for agent integration via --json flag and --output parameter",
+          "acceptance_criteria": [
+            "--json flag outputs complete diagnostics in JSON",
+            "--output flag writes JSON to specified file",
+            "JSON includes all issues, severity, file paths, line numbers, recommendations",
+            "JSON schema is documented and stable",
+            "JSON output is parseable by external agents"
+          ],
+          "estimated_effort": "small",
+          "depends_on": [
+            "aggregation-001",
+            "recommendations-001"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Advanced Features",
+      "priority": "medium",
+      "tasks": [
+        {
+          "id": "diff-001",
+          "title": "Implement --diff flag for changed files",
+          "description": "Support scanning only modified files compared to a git ref (e.g., main branch)",
+          "acceptance_criteria": [
+            "--diff main flag scans only changed files",
+            "Results show only issues in modified lines",
+            "Git integration works reliably",
+            "Performance improved for incremental checks"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "setup-002"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "agent-001",
+          "title": "Implement --fix flag for agent integration",
+          "description": "Support automated fixes via remote coding agents with deeplinks and structured output",
+          "acceptance_criteria": [
+            "--fix flag generates agent-friendly output",
+            "Deeplinks include project context and diagnostics",
+            "Format compatible with remote coding agents",
+            "User can apply fixes through agent interface"
+          ],
+          "estimated_effort": "large",
+          "depends_on": [
+            "output-002"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "parallel-001",
+          "title": "Implement parallel analysis execution",
+          "description": "Run linting, dead code detection, and test quality analysis in parallel for performance",
+          "acceptance_criteria": [
+            "All three analysis engines run concurrently",
+            "Thread/process safety is maintained",
+            "Performance improvement is measurable",
+            "No race conditions or data corruption"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "linting-001",
+            "deadcode-001",
+            "analysis-001"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "Testing & Documentation",
+      "priority": "high",
+      "tasks": [
+        {
+          "id": "test-001",
+          "title": "Write comprehensive test suite",
+          "description": "Create unit and integration tests for all major components",
+          "acceptance_criteria": [
+            "Unit tests for scoring system",
+            "Unit tests for analysis engines",
+            "Integration tests for CLI",
+            "Test coverage >80%",
+            "All tests pass"
+          ],
+          "estimated_effort": "large",
+          "depends_on": [
+            "setup-002",
+            "scoring-001"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "docs-001",
+          "title": "Create usage documentation",
+          "description": "Document CLI usage, configuration, and integration with agents",
+          "acceptance_criteria": [
+            "README has installation instructions",
+            "Configuration options documented",
+            "CLI flags documented with examples",
+            "Agent integration examples provided",
+            "JSON schema documented"
+          ],
+          "estimated_effort": "medium",
+          "depends_on": [
+            "output-001",
+            "output-002"
+          ],
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "core_libraries": [
+      "click",
+      "pytest",
+      "ruff",
+      "vulture",
+      "pathspec"
+    ],
+    "dev_dependencies": [
+      "pytest-cov",
+      "black",
+      "mypy"
+    ]
+  },
+  "notes": [
+    "All three analysis engines (linting, dead code, test quality) should be parallelizable",
+    "Configuration system should support both file-based and CLI-flag overrides",
+    "Agent integration should be flexible to support both local and remote agents",
+    "JSON output format should be stable and well-documented for agent compatibility"
+  ]
+}
