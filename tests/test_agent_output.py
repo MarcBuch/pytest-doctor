@@ -1,6 +1,11 @@
 """Tests for agent output formatting."""
 
-from pytest_doctor.agent_output import AgentFixSuggestion, AgentOutputFormatter
+from pytest_doctor.agent_output import (
+    AgentContext,
+    AgentFixSuggestion,
+    AgentOutput,
+    AgentOutputFormatter,
+)
 from pytest_doctor.aggregation import AggregatedIssues
 from pytest_doctor.models import DiagnosticReport, Issue, IssueSource, Severity
 
@@ -23,8 +28,8 @@ class TestAgentFixSuggestion:
         assert suggestion.line_number == 45
         assert suggestion.rule_id == "E501"
 
-    def test_agent_fix_suggestion_to_dict(self) -> None:
-        """Test converting suggestion to dict."""
+    def test_agent_fix_suggestion_to_dict_without_context(self) -> None:
+        """Test converting suggestion to dict without context lines."""
         suggestion = AgentFixSuggestion(
             file_path="tests/test_example.py",
             line_number=45,
@@ -39,6 +44,23 @@ class TestAgentFixSuggestion:
         assert result_dict["line_number"] == 45
         assert result_dict["rule_id"] == "E501"
         assert result_dict["recommendation"] == "Break line into multiple lines"
+        assert result_dict["context_lines"] == []
+
+    def test_agent_fix_suggestion_to_dict_with_context(self) -> None:
+        """Test converting suggestion to dict with context lines."""
+        context = ["line 44: def test_foo():", "line 45:     some_very_long_line = 1"]
+        suggestion = AgentFixSuggestion(
+            file_path="tests/test_example.py",
+            line_number=45,
+            rule_id="E501",
+            rule_name="Line too long",
+            message="Line too long",
+            severity="warning",
+            recommendation="Break line",
+            context_lines=context,
+        )
+        result_dict = suggestion.to_dict()
+        assert result_dict["context_lines"] == context
 
     def test_agent_fix_suggestion_with_context_lines(self) -> None:
         """Test suggestion with context lines."""
@@ -55,6 +77,140 @@ class TestAgentFixSuggestion:
         )
         result_dict = suggestion.to_dict()
         assert result_dict["context_lines"] == context
+
+
+class TestAgentContext:
+    """Tests for AgentContext."""
+
+    def test_agent_context_creation(self) -> None:
+        """Test creating an agent context."""
+        context = AgentContext(
+            project_path=".",
+            health_score=75,
+            total_issues=5,
+            critical_count=0,
+            warning_count=2,
+            info_count=3,
+        )
+        assert context.project_path == "."
+        assert context.health_score == 75
+        assert context.total_issues == 5
+        assert context.critical_count == 0
+        assert context.warning_count == 2
+        assert context.info_count == 3
+
+    def test_agent_context_with_critical_issues(self) -> None:
+        """Test agent context with critical issues."""
+        context = AgentContext(
+            project_path="/some/path",
+            health_score=30,
+            total_issues=10,
+            critical_count=5,
+            warning_count=3,
+            info_count=2,
+        )
+        assert context.critical_count == 5
+        assert context.health_score == 30
+
+
+class TestAgentOutput:
+    """Tests for AgentOutput."""
+
+    def test_agent_output_creation(self) -> None:
+        """Test creating an agent output."""
+        context = AgentContext(
+            project_path=".",
+            health_score=75,
+            total_issues=2,
+            critical_count=0,
+            warning_count=1,
+            info_count=1,
+        )
+        suggestions = [
+            AgentFixSuggestion(
+                file_path="tests/test_example.py",
+                line_number=10,
+                rule_id="E501",
+                rule_name="Line too long",
+                message="Test",
+                severity="warning",
+                recommendation="Fix",
+            ),
+        ]
+        deeplinks = {"documentation": "https://example.com"}
+
+        output = AgentOutput(
+            context=context,
+            suggestions=suggestions,
+            deeplinks=deeplinks,
+        )
+        assert output.context.health_score == 75
+        assert len(output.suggestions) == 1
+        assert output.deeplinks == deeplinks
+
+    def test_agent_output_to_dict_without_suggestions(self) -> None:
+        """Test converting empty agent output to dict."""
+        context = AgentContext(
+            project_path=".",
+            health_score=100,
+            total_issues=0,
+            critical_count=0,
+            warning_count=0,
+            info_count=0,
+        )
+        output = AgentOutput(
+            context=context,
+            suggestions=[],
+            deeplinks={},
+        )
+        output_dict = output.to_dict()
+        assert output_dict["context"]["health_score"] == 100
+        assert output_dict["suggestions"] == []
+
+    def test_agent_output_to_dict_with_suggestions(self) -> None:
+        """Test converting agent output with suggestions to dict."""
+        context = AgentContext(
+            project_path=".",
+            health_score=50,
+            total_issues=2,
+            critical_count=1,
+            warning_count=1,
+            info_count=0,
+        )
+        suggestions = [
+            AgentFixSuggestion(
+                file_path="src/main.py",
+                line_number=5,
+                rule_id="E501",
+                rule_name="Line too long",
+                message="Line is too long",
+                severity="critical",
+                recommendation="Shorten the line",
+            ),
+            AgentFixSuggestion(
+                file_path="src/utils.py",
+                line_number=15,
+                rule_id="F401",
+                rule_name="Unused import",
+                message="Import is unused",
+                severity="warning",
+                recommendation="Remove import",
+            ),
+        ]
+        deeplinks = {
+            "documentation": "https://example.com",
+            "fix_guide": "https://example.com/fix",
+        }
+        output = AgentOutput(
+            context=context,
+            suggestions=suggestions,
+            deeplinks=deeplinks,
+        )
+        output_dict = output.to_dict()
+        assert output_dict["context"]["critical_count"] == 1
+        assert len(output_dict["suggestions"]) == 2
+        assert output_dict["suggestions"][0]["rule_id"] == "E501"
+        assert output_dict["deeplinks"] == deeplinks
 
 
 class TestAgentOutputFormatter:

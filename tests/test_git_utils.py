@@ -174,3 +174,80 @@ class TestGitDiffHandler:
 
         is_repo = handler.is_git_repo()
         assert is_repo is False
+
+    @patch("subprocess.run")
+    def test_get_changed_files_with_multiple_renames(self, mock_run: MagicMock) -> None:
+        """Test handling renamed files in git output."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "file1.py\nfile2.py\nfile3.py\n"
+
+        mock_run.side_effect = [mock_result, MagicMock(returncode=0, stdout="")]
+
+        handler = GitDiffHandler(".")
+        changed = handler.get_changed_files("main")
+
+        assert len(changed) >= 2
+
+    @patch("subprocess.run")
+    def test_get_changed_lines_with_complex_diff(self, mock_run: MagicMock) -> None:
+        """Test parsing complex diff output with multiple hunks."""
+        diff_output = """@@ -5,6 +5,7 @@
+  context
+  context
+ -removed
+ +added
+  context
+ @@ -20,4 +21,5 @@
+  more context
+ +another addition"""
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = diff_output
+
+        mock_run.return_value = mock_result
+
+        handler = GitDiffHandler(".")
+        changed_lines = handler.get_changed_lines("test.py", "main")
+
+        # Should have parsed multiple hunks
+        assert len(changed_lines) > 0
+
+    @patch("subprocess.run")
+    def test_get_changed_files_with_path_object(self, mock_run: MagicMock) -> None:
+        """Test get_changed_files with Path object."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "file.py\n"
+
+        mock_run.side_effect = [mock_result, MagicMock(returncode=0, stdout="")]
+
+        handler = GitDiffHandler(Path("."))
+        changed = handler.get_changed_files("main")
+
+        assert "file.py" in changed
+
+    @patch("subprocess.run")
+    def test_is_git_repo_with_other_error(self, mock_run: MagicMock) -> None:
+        """Test is_git_repo with error codes other than 128."""
+        mock_result = MagicMock()
+        mock_result.returncode = 255  # Some other error
+
+        mock_run.return_value = mock_result
+
+        handler = GitDiffHandler(".")
+        # Non-zero return code should indicate not a git repo
+        assert handler.is_git_repo() is False
+
+    @patch("subprocess.run")
+    def test_ref_exists_with_different_error(self, mock_run: MagicMock) -> None:
+        """Test ref_exists with different error codes."""
+        mock_result = MagicMock()
+        mock_result.returncode = 255  # Different error code
+
+        mock_run.return_value = mock_result
+
+        handler = GitDiffHandler(".")
+        # Non-zero return code means ref doesn't exist
+        assert handler.ref_exists("main") is False

@@ -18,6 +18,18 @@ class TestIgnoreConfig:
         assert ".pytest_cache/**" in config.files
         assert len(config.files) > 10  # Multiple defaults
 
+    def test_ignore_config_creation_with_rules(self) -> None:
+        """Test IgnoreConfig creation with rules."""
+        config = IgnoreConfig(rules=["E501", "W503"])
+        assert config.rules == ["E501", "W503"]
+
+    def test_ignore_config_creation_with_files(self) -> None:
+        """Test IgnoreConfig creation with custom files."""
+        config = IgnoreConfig(files=["custom/**"])
+        assert "custom/**" in config.files
+        # Should also include defaults
+        assert ".venv/**" in config.files
+
     def test_ignore_config_from_dict(self) -> None:
         """Test creating IgnoreConfig from dictionary includes defaults."""
         data = {
@@ -86,6 +98,22 @@ class TestConfig:
         assert ".venv/**" in config.ignore.files
         assert len(config.ignore.files) > 10
 
+    def test_config_from_empty_dict(self) -> None:
+        """Test creating Config from empty dict returns defaults."""
+        config = Config.from_dict({})
+        assert config.lint is True
+        assert config.dead_code is True
+        assert config.test_analysis is True
+        assert config.verbose is False
+
+    def test_config_from_none(self) -> None:
+        """Test creating Config from None returns defaults."""
+        config = Config.from_dict(None)
+        assert config.lint is True
+        assert config.dead_code is True
+        assert config.test_analysis is True
+        assert config.verbose is False
+
     def test_config_to_dict(self) -> None:
         """Test converting Config to dictionary."""
         config = Config(
@@ -99,6 +127,20 @@ class TestConfig:
         assert result["deadCode"] is True
         assert result["testAnalysis"] is False
         assert result["verbose"] is True
+
+    def test_config_to_dict_with_ignore(self) -> None:
+        """Test converting Config with ignore rules to dict."""
+        config = Config(
+            ignore=IgnoreConfig(rules=["E501"], files=["tests/**"]),
+            lint=True,
+            dead_code=False,
+            test_analysis=True,
+            verbose=False,
+        )
+        result = config.to_dict()
+        assert result["ignore"]["rules"] == ["E501"]
+        assert "tests/**" in result["ignore"]["files"]
+        assert ".venv/**" in result["ignore"]["files"]
 
 
 class TestLoadConfig:
