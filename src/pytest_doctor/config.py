@@ -18,8 +18,63 @@ else:
 class IgnoreConfig:
     """Configuration for ignored rules and files."""
 
+    # Default patterns to ignore (virtual environments, build artifacts, etc.)
+    DEFAULT_IGNORE_FILES: list[str] = field(
+        default_factory=lambda: [
+            ".venv/**",
+            "venv/**",
+            ".env/**",
+            "env/**",
+            ".tox/**",
+            "tox/**",
+            ".eggs/**",
+            "eggs/**",
+            "*.egg-info/**",
+            "build/**",
+            "dist/**",
+            ".pytest_cache/**",
+            ".mypy_cache/**",
+            ".ruff_cache/**",
+            "node_modules/**",
+            ".git/**",
+            ".hg/**",
+            ".svn/**",
+            "__pycache__/**",
+        ],
+        init=False,
+    )
+
     rules: list[str] = field(default_factory=list)
     files: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        """Merge user-provided patterns with defaults."""
+        # Start with default patterns
+        default_patterns = [
+            ".venv/**",
+            "venv/**",
+            ".env/**",
+            "env/**",
+            ".tox/**",
+            "tox/**",
+            ".eggs/**",
+            "eggs/**",
+            "*.egg-info/**",
+            "build/**",
+            "dist/**",
+            ".pytest_cache/**",
+            ".mypy_cache/**",
+            ".ruff_cache/**",
+            "node_modules/**",
+            ".git/**",
+            ".hg/**",
+            ".svn/**",
+            "__pycache__/**",
+        ]
+
+        # Add user-provided patterns (avoiding duplicates)
+        user_patterns = set(self.files)
+        self.files = default_patterns + [p for p in user_patterns if p not in default_patterns]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> IgnoreConfig:
