@@ -3,8 +3,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from pytest_doctor.git_utils import GitDiffHandler
 
 

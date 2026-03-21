@@ -1,8 +1,8 @@
 """Tests for agent output formatting."""
 
-from pytest_doctor.agent_output import AgentOutputFormatter, AgentFixSuggestion
-from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
-from pytest_doctor.models import AnalysisResult, DiagnosticReport, Issue, IssueSource, Severity
+from pytest_doctor.agent_output import AgentFixSuggestion, AgentOutputFormatter
+from pytest_doctor.aggregation import AggregatedIssues
+from pytest_doctor.models import DiagnosticReport, Issue, IssueSource, Severity
 
 
 class TestAgentFixSuggestion:
