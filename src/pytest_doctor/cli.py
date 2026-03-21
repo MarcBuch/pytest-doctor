@@ -56,7 +56,7 @@ def _print_report(
                 severity_symbol = {
                     "critical": "✗",
                     "warning": "⚠",
-                    "info": "ℹ",
+                    "info": "i",
                 }.get(issue.severity.value, "•")
 
                 rule_info = f"[{issue.rule_id}]" if issue.rule_id else ""

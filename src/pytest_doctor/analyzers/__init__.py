@@ -5,4 +5,4 @@ from pytest_doctor.analyzers.quality_analyzer import QualityAnalyzer
 from pytest_doctor.analyzers.ruff_analyzer import RuffAnalyzer
 from pytest_doctor.analyzers.vulture_analyzer import VultureAnalyzer
 
-__all__ = ["QualityAnalyzer", "RuffAnalyzer", "VultureAnalyzer", "GapAnalyzer"]
+__all__ = ["GapAnalyzer", "QualityAnalyzer", "RuffAnalyzer", "VultureAnalyzer"]
