@@ -1,0 +1,19 @@
+{
+  "name": "pytest-doctor",
+  "version": "0.1.0",
+  "description": "A CLI tool that diagnoses weak or broken pytest suites and provides a 0-100 health score with actionable recommendations",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MarcBuch/pytest-doctor"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/commit-analyzer": "^11.0.0",
+    "@semantic-release/exec": "^6.0.0",
+    "@semantic-release/git": "^10.0.0",
+    "@semantic-release/github": "^9.0.0",
+    "@semantic-release/release-notes-generator": "^12.0.0",
+    "semantic-release": "^22.0.0"
+  }
+}
