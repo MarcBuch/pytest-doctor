@@ -70,8 +70,54 @@ def test_cli_diff_flag() -> None:
 
 
 def test_cli_fix_flag() -> None:
-    """Test --fix flag."""
+    """Test --fix flag generates agent-friendly JSON."""
     runner = CliRunner()
     result = runner.invoke(main, [".", "--fix"])
     assert result.exit_code == 0
-    assert "Fix mode enabled" in result.output
+    # --fix flag outputs JSON, not plain text
+    output = json.loads(result.output)
+    assert "context" in output
+    assert "suggestions" in output
+    assert "deeplinks" in output
+
+
+def test_cli_fix_flag_detailed_output() -> None:
+    """Test --fix flag output structure."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--fix"])
+    assert result.exit_code == 0
+
+    # Parse JSON output
+    output = json.loads(result.output)
+
+    # Check context structure
+    context = output["context"]
+    assert "health_score" in context
+    assert "total_issues" in context
+    assert "critical_count" in context
+    assert "warning_count" in context
+    assert "info_count" in context
+
+    # Check suggestions is a list
+    assert isinstance(output["suggestions"], list)
+
+    # Check deeplinks is a dict
+    assert isinstance(output["deeplinks"], dict)
+
+    # Verify version is included
+    assert "version" in output
+
+
+def test_cli_fix_flag_with_output_file(tmp_path: Path) -> None:
+    """Test --fix flag with --output file."""
+    output_file = tmp_path / "agent_output.json"
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--fix", "--output", str(output_file)])
+    assert result.exit_code == 0
+    assert output_file.exists()
+
+    # Verify file contains valid agent-friendly JSON
+    data = json.loads(output_file.read_text())
+    assert "context" in data
+    assert "suggestions" in data
+    assert "deeplinks" in data

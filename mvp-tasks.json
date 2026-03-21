@@ -252,40 +252,40 @@
            ],
            "status": "completed"
          },
-        {
-          "id": "agent-001",
-          "title": "Implement --fix flag for agent integration",
-          "description": "Support automated fixes via remote coding agents with deeplinks and structured output",
-          "acceptance_criteria": [
-            "--fix flag generates agent-friendly output",
-            "Deeplinks include project context and diagnostics",
-            "Format compatible with remote coding agents",
-            "User can apply fixes through agent interface"
-          ],
-          "estimated_effort": "large",
-          "depends_on": [
-            "output-002"
-          ],
-          "status": "pending"
-        },
-        {
-          "id": "parallel-001",
-          "title": "Implement parallel analysis execution",
-          "description": "Run linting, dead code detection, and test quality analysis in parallel for performance",
-          "acceptance_criteria": [
-            "All three analysis engines run concurrently",
-            "Thread/process safety is maintained",
-            "Performance improvement is measurable",
-            "No race conditions or data corruption"
-          ],
-          "estimated_effort": "medium",
-          "depends_on": [
-            "linting-001",
-            "deadcode-001",
-            "analysis-001"
-          ],
-          "status": "pending"
-        }
+         {
+           "id": "agent-001",
+           "title": "Implement --fix flag for agent integration",
+           "description": "Support automated fixes via remote coding agents with deeplinks and structured output",
+           "acceptance_criteria": [
+             "--fix flag generates agent-friendly output",
+             "Deeplinks include project context and diagnostics",
+             "Format compatible with remote coding agents",
+             "User can apply fixes through agent interface"
+           ],
+           "estimated_effort": "large",
+           "depends_on": [
+             "output-002"
+           ],
+           "status": "completed"
+         },
+         {
+           "id": "parallel-001",
+           "title": "Implement parallel analysis execution",
+           "description": "Run linting, dead code detection, and test quality analysis in parallel for performance",
+           "acceptance_criteria": [
+             "All three analysis engines run concurrently",
+             "Thread/process safety is maintained",
+             "Performance improvement is measurable",
+             "No race conditions or data corruption"
+           ],
+           "estimated_effort": "medium",
+           "depends_on": [
+             "linting-001",
+             "deadcode-001",
+             "analysis-001"
+           ],
+           "status": "completed"
+         }
       ]
     },
     {

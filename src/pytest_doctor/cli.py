@@ -3,16 +3,18 @@
 import json
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import click
 
 from pytest_doctor import __version__
+from pytest_doctor.agent_output import AgentOutputFormatter
 from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
 from pytest_doctor.analyzers import GapAnalyzer, QualityAnalyzer, RuffAnalyzer, VultureAnalyzer
 from pytest_doctor.config import load_config
 from pytest_doctor.git_utils import GitDiffHandler
-from pytest_doctor.models import DiagnosticReport
+from pytest_doctor.models import AnalysisResult, DiagnosticReport
+from pytest_doctor.parallel import run_analyses_parallel
 from pytest_doctor.scoring import HealthScorer
 
 
@@ -99,43 +101,42 @@ def main(
     # Load configuration from files and merge with CLI flags
     config = load_config(path, verbose=verbose)
 
-    # Show initial message if not JSON output
-    if not (output_json or output):
+    # Show initial message if not JSON output or fix flag
+    if not (output_json or output or fix):
         click.echo(f"Scanning: {path}")
         if config.verbose:
             click.echo("Verbose mode enabled")
-        if fix:
-            click.echo("Fix mode enabled")
         if diff:
             click.echo(f"Scanning changed files relative to: {diff}")
 
     # Run all analysis engines
     try:
-        results = []
+        # Prepare analysis functions for parallel execution
+        analysis_functions: list[tuple[Callable[[], AnalysisResult | None], str]] = []
 
         if config.lint:
-            if config.verbose:
-                click.echo("Running ruff linting analysis...", err=True)
             ruff_analyzer = RuffAnalyzer(config)
-            results.append(ruff_analyzer.analyze(path))
+            analysis_functions.append((lambda a=ruff_analyzer, p=path: a.analyze(p), "ruff"))
 
         if config.dead_code:
-            if config.verbose:
-                click.echo("Running vulture dead code analysis...", err=True)
             vulture_analyzer = VultureAnalyzer(config)
-            results.append(vulture_analyzer.analyze(path))
+            analysis_functions.append((lambda a=vulture_analyzer, p=path: a.analyze(p), "vulture"))
 
         if config.test_analysis:
-            if config.verbose:
-                click.echo("Running test quality analysis...", err=True)
             quality_analyzer = QualityAnalyzer(config)
-            results.append(quality_analyzer.analyze(path))
+            analysis_functions.append((lambda a=quality_analyzer, p=path: a.analyze(p), "quality"))
 
         if config.coverage_gaps:
-            if config.verbose:
-                click.echo("Running coverage gap analysis...", err=True)
             gap_analyzer = GapAnalyzer(config)
-            results.append(gap_analyzer.analyze(path))
+            analysis_functions.append((lambda a=gap_analyzer, p=path: a.analyze(p), "gap"))
+
+        # Run analyses in parallel
+        if config.verbose:
+            click.echo(
+                f"Running {len(analysis_functions)} analysis engines in parallel...",
+                err=True,
+            )
+        results = run_analyses_parallel(analysis_functions)
 
         # Aggregate results
         aggregator = ResultsAggregator()
@@ -180,7 +181,20 @@ def main(
         )
 
         # Output results
-        if output_json or output:
+        if fix:
+            # Agent-friendly output with deeplinks and structured recommendations
+            formatter = AgentOutputFormatter()
+            agent_output = formatter.format_for_agent(diagnostic, aggregated)
+            output_dict = agent_output.to_dict()
+            output_dict["version"] = __version__
+            output_str = json.dumps(output_dict, indent=2)
+
+            if output:
+                Path(output).write_text(output_str)
+                click.echo(f"Agent output written to {output}")
+            else:
+                click.echo(output_str)
+        elif output_json or output:
             output_dict = diagnostic.to_dict()
             # Add version and other metadata
             output_dict["version"] = __version__
