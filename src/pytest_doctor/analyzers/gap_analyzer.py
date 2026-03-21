@@ -178,9 +178,9 @@ class GapAnalyzer:
                     gap_issues = self._check_untested_function(node, source_file, tested_entities)
                     issues.extend(gap_issues)
 
-                elif (
-                    isinstance(node, ast.ClassDef) and not node.name.startswith("_")  # Public class
-                ):
+                elif isinstance(node, ast.ClassDef) and not node.name.startswith(
+                    "_"
+                ):  # Public class
                     gap_issues = self._check_untested_class(node, source_file, tested_entities)
                     issues.extend(gap_issues)
 
