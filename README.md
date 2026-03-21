@@ -52,7 +52,7 @@ pytest-doctor . --fix
 
 - **PATH**: Directory to scan (default: current directory)
 - **--verbose, -v**: Enable verbose output with detailed recommendations
-- **--fix**: Generate agent-friendly output for automated fixes
+- **--fix**: Generate agent-friendly output with structured recommendations and deeplinks. Creates `.pytest-doctor/diagnostics.json` with complete analysis, context, and navigation links
 - **--diff REF**: Scan only files changed compared to a git reference (e.g., `main`, `HEAD~1`)
 - **--json**: Output complete diagnostics in JSON format to stdout
 - **--output FILE**: Write JSON diagnostics to the specified file
@@ -213,9 +213,28 @@ This is useful for CI/CD pipelines to report only issues in changed code.
 
 ## Agent Integration
 
+### Using the --fix Flag (Recommended)
+
+The `--fix` flag generates agent-friendly output with structured recommendations and deeplinks:
+
+```bash
+# Generate agent-friendly output with deeplinks
+pytest-doctor . --fix
+```
+
+This creates a `.pytest-doctor/diagnostics.json` file with:
+- **Context**: project path, health score, issue counts
+- **Suggestions**: structured fix recommendations for each issue
+- **Deeplinks**: file:// and https:// links for easy navigation to:
+  - Diagnostics summary JSON
+  - Critical issues (if any)
+  - Documentation and fix guides
+
+The output includes all information needed by coding agents to understand and fix issues automatically.
+
 ### JSON-Based Integration
 
-For local or remote coding agents, use JSON output:
+For local or remote coding agents, you can also use JSON output:
 
 ```bash
 # Pipe diagnostics to your agent
@@ -232,6 +251,41 @@ The JSON output includes:
 - Health score and summary statistics
 - Source information (which analyzer found the issue)
 
+### Agent Output Format (--fix)
+
+When using `--fix`, the output follows this structure:
+
+```json
+{
+  "context": {
+    "project_path": ".",
+    "health_score": 57,
+    "total_issues": 125,
+    "critical_count": 0,
+    "warning_count": 31,
+    "info_count": 94
+  },
+  "suggestions": [
+    {
+      "file_path": "src/pytest_doctor/cli.py",
+      "line_number": 81,
+      "rule_id": "untested-function",
+      "rule_name": "Function appears untested",
+      "message": "Function 'main' with 29 code paths may not be tested",
+      "severity": "warning",
+      "recommendation": "Add test case(s) for main covering all branches",
+      "context_lines": []
+    }
+  ],
+  "deeplinks": {
+    "diagnostics_summary": "file://./.pytest-doctor/diagnostics.json",
+    "documentation": "https://github.com/pytest-doctor/pytest-doctor#agent-integration",
+    "fix_guide": "https://github.com/pytest-doctor/pytest-doctor#fixing-issues"
+  },
+  "version": "0.1.0"
+}
+```
+
 ### Integration Examples
 
 **Python-based agent:**
@@ -240,23 +294,30 @@ The JSON output includes:
 import json
 import subprocess
 
-# Get diagnostics
-result = subprocess.run(['pytest-doctor', '.', '--json'], 
+# Get diagnostics via --fix flag
+result = subprocess.run(['pytest-doctor', '.', '--fix'], 
                        capture_output=True, text=True)
-diagnostics = json.loads(result.stdout)
+agent_output = json.loads(result.stdout)
 
-# Process issues
-for issue in diagnostics['all_issues']:
-    print(f"Fix {issue['rule_id']} in {issue['file_path']}:{issue['line_number']}")
-    print(f"Recommendation: {issue['recommendation']}")
+# Access context and suggestions
+context = agent_output['context']
+print(f"Health Score: {context['health_score']}/100")
+
+for suggestion in agent_output['suggestions']:
+    print(f"Fix {suggestion['rule_id']} in {suggestion['file_path']}:{suggestion['line_number']}")
+    print(f"Recommendation: {suggestion['recommendation']}")
+
+# Open diagnostics file via deeplink
+diagnostics_url = agent_output['deeplinks']['diagnostics_summary']
+print(f"See full diagnostics: {diagnostics_url}")
 ```
 
 **Shell-based agent:**
 
 ```bash
 #!/bin/bash
-pytest-doctor . --json | jq '.all_issues[] | 
-  {file: .file_path, line: .line_number, msg: .recommendation}'
+pytest-doctor . --fix | jq '.suggestions[] | 
+  {file: .file_path, line: .line_number, recommendation: .recommendation}'
 ```
 
 ---

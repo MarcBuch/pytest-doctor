@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from pytest_doctor.aggregation import AggregatedIssues
@@ -32,7 +33,7 @@ class AgentFixSuggestion:
     message: str
     severity: str
     recommendation: str
-    context_lines: list[str] = None  # Source code context
+    context_lines: list[str] | None = None  # Source code context
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -148,9 +149,8 @@ class AgentOutputFormatter:
         deeplinks: dict[str, str] = {}
 
         # Add a link to the diagnostics summary
-        deeplinks["diagnostics_summary"] = (
-            f"file://{diagnostic.path}/.pytest-doctor/diagnostics.json"
-        )
+        diagnostics_path = Path(diagnostic.path).resolve() / ".pytest-doctor" / "diagnostics.json"
+        deeplinks["diagnostics_summary"] = f"file://{diagnostics_path}"
 
         # Add links to critical issues
         if aggregated.summary["critical"] > 0:

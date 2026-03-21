@@ -193,6 +193,13 @@ def main(
                 Path(output).write_text(output_str)
                 click.echo(f"Agent output written to {output}")
             else:
+                # Create .pytest-doctor directory and write diagnostics.json
+                diagnostics_dir = Path(path) / ".pytest-doctor"
+                diagnostics_dir.mkdir(parents=True, exist_ok=True)
+                diagnostics_file = diagnostics_dir / "diagnostics.json"
+                diagnostics_file.write_text(output_str)
+
+                # Output the result
                 click.echo(output_str)
         elif output_json or output:
             output_dict = diagnostic.to_dict()
