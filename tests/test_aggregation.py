@@ -1,7 +1,13 @@
 """Tests for the aggregation module."""
 
 from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
-from pytest_doctor.models import AnalysisResult, Issue, IssueSource, Severity
+from pytest_doctor.models import (
+    AnalysisResult,
+    Issue,
+    IssueSource,
+    Severity,
+    MutationStats,
+)
 
 
 def _make_issue(
@@ -227,3 +233,90 @@ class TestResultsAggregator:
         assert len(filtered.all_issues) == 0
         assert filtered.summary["warning"] == 0
         assert len(filtered.by_file) == 0
+
+    def test_aggregate_with_mutation_results(self) -> None:
+        """Test aggregating results that include mutation results."""
+        aggregator = ResultsAggregator()
+
+        # Create weak assertion issues (from mutations)
+        weak_assertion_issue = Issue(
+            file_path="src/math.py",
+            line_number=10,
+            rule_id="weak-assertion",
+            severity=Severity.WARNING,
+            source=IssueSource.MUTATION_TESTING,
+            message="Mutation '< changed to <=' survived",
+            recommendation="Strengthen assertion",
+        )
+
+        # Create mutation analysis result with metadata
+        mutation_stats = MutationStats(
+            total_mutations=5,
+            killed_count=3,
+            survival_rate=0.4,
+            time_ms=1000,
+        )
+        mutation_result = AnalysisResult(
+            engine="assertion_quality",
+            issues=[weak_assertion_issue],
+            metadata={"mutation_stats": mutation_stats},
+        )
+
+        # Create regular lint result
+        lint_issue = Issue(
+            file_path="src/math.py",
+            line_number=5,
+            rule_id="E501",
+            severity=Severity.WARNING,
+            source=IssueSource.LINTING,
+            message="Line too long",
+        )
+        lint_result = AnalysisResult(engine="ruff", issues=[lint_issue])
+
+        # Aggregate both results
+        aggregated = aggregator.aggregate([lint_result, mutation_result])
+
+        # Verify mutation issues are included
+        assert len(aggregated.all_issues) == 2
+        assert any(issue.source == IssueSource.MUTATION_TESTING for issue in aggregated.all_issues)
+        assert any(issue.source == IssueSource.LINTING for issue in aggregated.all_issues)
+        assert aggregated.summary["warning"] == 2
+
+    def test_aggregate_with_mutation_stats_metadata(self) -> None:
+        """Test that mutation stats are preserved in aggregation."""
+        aggregator = ResultsAggregator()
+
+        mutation_stats = MutationStats(
+            total_mutations=10,
+            killed_count=7,
+            survival_rate=0.3,
+            time_ms=5000,
+        )
+
+        mutation_result = AnalysisResult(
+            engine="assertion_quality",
+            issues=[],
+            metadata={"mutation_stats": mutation_stats},
+        )
+
+        aggregated = aggregator.aggregate([mutation_result])
+
+        # Metadata should be preserved in results
+        assert len(aggregated.all_issues) == 0
+        assert aggregated.summary["warning"] == 0
+
+    def test_aggregate_backward_compatibility_no_mutations(self) -> None:
+        """Test that aggregation works without mutation results."""
+        aggregator = ResultsAggregator()
+
+        # Only regular results
+        issues = [
+            _make_issue(line_number=1, rule_id="E501"),
+            _make_issue(line_number=2, rule_id="E502"),
+        ]
+        result = AnalysisResult(engine="ruff", issues=issues)
+        aggregated = aggregator.aggregate([result])
+
+        # Should work as before
+        assert len(aggregated.all_issues) == 2
+        assert aggregated.summary["warning"] == 2
