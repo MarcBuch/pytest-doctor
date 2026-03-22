@@ -22,6 +22,7 @@ class IssueSource(str, Enum):
     DEAD_CODE = "dead_code"
     TEST_QUALITY = "test_quality"
     COVERAGE = "coverage"
+    MUTATION_TESTING = "mutation_testing"
 
 
 @dataclass
@@ -60,6 +61,7 @@ class AnalysisResult:
     engine: str
     issues: list[Issue] = field(default_factory=list)
     duration_ms: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -71,23 +73,48 @@ class AnalysisResult:
 
 
 @dataclass
+class Mutation:
+    """Represents a single mutation from mutation testing."""
+
+    id: str
+    source_location: str
+    mutation_type: str
+    killed: bool
+    failing_tests: list[str] = field(default_factory=list)
+
+
+@dataclass
+class MutationStats:
+    """Statistics from mutation testing."""
+
+    total_mutations: int
+    killed_count: int
+    survival_rate: float
+    time_ms: int
+
+
+@dataclass
 class DiagnosticReport:
     """Complete diagnostic report from all analysis engines."""
 
     path: str
     score: int
     results: list[AnalysisResult] = field(default_factory=list)
-    summary: dict[str, int] = field(
+    summary: dict[str, int | float] = field(
         default_factory=lambda: {"critical": 0, "warning": 0, "info": 0}
     )
     total_issues: int = 0
+    mutation_survival_rate: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result: dict[str, Any] = {
             "path": self.path,
             "score": self.score,
             "results": [r.to_dict() for r in self.results],
             "summary": self.summary,
             "total_issues": self.total_issues,
         }
+        if self.mutation_survival_rate is not None:
+            result["mutation_survival_rate"] = self.mutation_survival_rate
+        return result
