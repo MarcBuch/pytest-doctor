@@ -18,7 +18,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "uv run pip install build && python -m build"
+        "prepareCmd": "sed -i \"s/version = \\\".*\\\"/version = \\\"${nextRelease.version}\\\"/\" pyproject.toml && uv run pip install build && python -m build"
       }
     ],
     [
@@ -31,6 +31,12 @@
           "package-lock.json"
         ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "uv publish"
       }
     ],
     [
