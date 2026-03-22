@@ -10,7 +10,13 @@ import click
 from pytest_doctor import __version__
 from pytest_doctor.agent_output import AgentOutputFormatter
 from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
-from pytest_doctor.analyzers import GapAnalyzer, QualityAnalyzer, RuffAnalyzer, VultureAnalyzer
+from pytest_doctor.analyzers import (
+    AssertionQualityAnalyzer,
+    GapAnalyzer,
+    QualityAnalyzer,
+    RuffAnalyzer,
+    VultureAnalyzer,
+)
 from pytest_doctor.config import load_config
 from pytest_doctor.git_utils import GitDiffHandler
 from pytest_doctor.models import AnalysisResult, DiagnosticReport
@@ -146,6 +152,14 @@ def main(
 
             analysis_functions.append((gap_fn, "gap"))
 
+        if config.assertion_quality:
+            assertion_analyzer = AssertionQualityAnalyzer(config)
+
+            def assertion_fn() -> Union[AnalysisResult, None]:
+                return assertion_analyzer.analyze(path)
+
+            analysis_functions.append((assertion_fn, "assertion_quality"))
+
         # Run analyses in parallel
         if config.verbose:
             click.echo(
@@ -187,13 +201,23 @@ def main(
         scorer = HealthScorer()
         score = scorer.calculate_score([r for r in results if r is not None])
 
+        # Extract mutation stats if available
+        mutation_survival_rate: float | None = None
+        for result in results:
+            if result and result.engine == "assertion_quality":
+                if "mutation_stats" in result.metadata:
+                    mutation_stats = result.metadata["mutation_stats"]
+                    mutation_survival_rate = mutation_stats.survival_rate
+                break
+
         # Create diagnostic report
         diagnostic = DiagnosticReport(
             path=path,
             score=score,
             results=results,
-            summary=aggregated.summary,
+            summary=aggregated.summary,  # type: ignore
             total_issues=len(aggregated.all_issues),
+            mutation_survival_rate=mutation_survival_rate,
         )
 
         # Output results
