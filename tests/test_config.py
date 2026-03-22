@@ -256,3 +256,65 @@ files = ["tests/legacy/**", "src/old/**"]
         assert "src/old/**" in config.ignore.files
         assert ".venv/**" in config.ignore.files
         assert len(config.ignore.files) > 10
+
+    def test_load_config_with_assertion_quality(self, tmp_path: Path) -> None:
+        """Test loading config with assertion quality settings."""
+        pyproject_file = tmp_path / "pyproject.toml"
+        pyproject_file.write_text("""
+[tool.pytest-doctor]
+assertionQuality = true
+mutationDepth = "deep"
+mutationTimeoutMs = 10000
+""")
+
+        config = load_config(tmp_path)
+        assert config.assertion_quality is True
+        assert config.mutation_depth == "deep"
+        assert config.mutation_timeout_ms == 10000
+
+    def test_load_config_assertion_quality_disabled_by_default(self, tmp_path: Path) -> None:
+        """Test that assertion quality is disabled by default."""
+        config = load_config(tmp_path)
+        assert config.assertion_quality is False
+        assert config.mutation_depth == "standard"
+        assert config.mutation_timeout_ms == 5000
+
+    def test_config_mutation_depth_validation(self) -> None:
+        """Test mutation depth validation."""
+        # Valid values should work
+        config = Config.from_dict({"mutationDepth": "light"})
+        assert config.mutation_depth == "light"
+
+        config = Config.from_dict({"mutationDepth": "standard"})
+        assert config.mutation_depth == "standard"
+
+        config = Config.from_dict({"mutationDepth": "deep"})
+        assert config.mutation_depth == "deep"
+
+        # Invalid value should default to "standard"
+        config = Config.from_dict({"mutationDepth": "invalid"})
+        assert config.mutation_depth == "standard"
+
+    def test_config_from_dict_assertion_quality(self) -> None:
+        """Test creating Config with assertion quality settings."""
+        data = {
+            "assertionQuality": True,
+            "mutationDepth": "light",
+            "mutationTimeoutMs": 8000,
+        }
+        config = Config.from_dict(data)
+        assert config.assertion_quality is True
+        assert config.mutation_depth == "light"
+        assert config.mutation_timeout_ms == 8000
+
+    def test_config_to_dict_assertion_quality(self) -> None:
+        """Test converting Config to dict includes assertion quality."""
+        config = Config(
+            assertion_quality=True,
+            mutation_depth="deep",
+            mutation_timeout_ms=15000,
+        )
+        data = config.to_dict()
+        assert data["assertionQuality"] is True
+        assert data["mutationDepth"] == "deep"
+        assert data["mutationTimeoutMs"] == 15000
