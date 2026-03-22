@@ -5,9 +5,48 @@ from pytest_doctor.agent_output import (
     AgentFixSuggestion,
     AgentOutput,
     AgentOutputFormatter,
+    MutationEvidence,
+    MutationStats,
 )
 from pytest_doctor.aggregation import AggregatedIssues
-from pytest_doctor.models import DiagnosticReport, Issue, IssueSource, Severity
+from pytest_doctor.models import (
+    AnalysisResult,
+    DiagnosticReport,
+    Issue,
+    IssueSource,
+    MutationStats as ModelMutationStats,
+    Severity,
+)
+
+
+class TestMutationEvidence:
+    """Tests for MutationEvidence."""
+
+    def test_mutation_evidence_creation(self) -> None:
+        """Test creating mutation evidence."""
+        evidence = MutationEvidence(
+            mutation_type="< changed to <=",
+            location="src/user.py:23",
+            survived_by_tests=["test_user_id_validation"],
+            recommendation="Add boundary test case",
+        )
+        assert evidence.mutation_type == "< changed to <="
+        assert evidence.location == "src/user.py:23"
+        assert evidence.survived_by_tests == ["test_user_id_validation"]
+
+    def test_mutation_evidence_to_dict(self) -> None:
+        """Test converting mutation evidence to dict."""
+        evidence = MutationEvidence(
+            mutation_type="< changed to <=",
+            location="src/user.py:23",
+            survived_by_tests=["test_user_id_validation"],
+            recommendation="Add boundary test case",
+        )
+        result_dict = evidence.to_dict()
+        assert result_dict["mutation_type"] == "< changed to <="
+        assert result_dict["location"] == "src/user.py:23"
+        assert result_dict["survived_by_tests"] == ["test_user_id_validation"]
+        assert result_dict["recommendation"] == "Add boundary test case"
 
 
 class TestAgentFixSuggestion:
@@ -45,6 +84,42 @@ class TestAgentFixSuggestion:
         assert result_dict["rule_id"] == "E501"
         assert result_dict["recommendation"] == "Break line into multiple lines"
         assert result_dict["context_lines"] == []
+
+    def test_agent_fix_suggestion_with_mutation_evidence(self) -> None:
+        """Test suggestion with mutation evidence."""
+        evidence = MutationEvidence(
+            mutation_type="< changed to <=",
+            location="src/user.py:23",
+            survived_by_tests=["test_user_id_validation"],
+            recommendation="Add boundary test",
+        )
+        suggestion = AgentFixSuggestion(
+            file_path="tests/test_example.py",
+            line_number=45,
+            rule_id="weak-assertion",
+            rule_name="Weak Assertion",
+            message="Mutation survived",
+            severity="warning",
+            recommendation="Strengthen assertion",
+            mutation_evidence=evidence,
+        )
+        result_dict = suggestion.to_dict()
+        assert "mutation_evidence" in result_dict
+        assert result_dict["mutation_evidence"]["mutation_type"] == "< changed to <="
+
+    def test_agent_fix_suggestion_without_mutation_evidence(self) -> None:
+        """Test suggestion without mutation evidence."""
+        suggestion = AgentFixSuggestion(
+            file_path="tests/test_example.py",
+            line_number=45,
+            rule_id="E501",
+            rule_name="Line too long",
+            message="Line too long",
+            severity="warning",
+            recommendation="Break line",
+        )
+        result_dict = suggestion.to_dict()
+        assert "mutation_evidence" not in result_dict
 
     def test_agent_fix_suggestion_to_dict_with_context(self) -> None:
         """Test converting suggestion to dict with context lines."""
@@ -111,6 +186,28 @@ class TestAgentContext:
         )
         assert context.critical_count == 5
         assert context.health_score == 30
+
+    def test_agent_context_with_mutation_stats(self) -> None:
+        """Test agent context with mutation statistics."""
+        mutation_stats = MutationStats(
+            total_mutations=127,
+            killed=45,
+            survival_rate=0.65,
+        )
+        context = AgentContext(
+            project_path=".",
+            health_score=70,
+            total_issues=8,
+            critical_count=0,
+            warning_count=5,
+            info_count=3,
+            assertion_quality_score=35,
+            mutation_stats=mutation_stats,
+        )
+        assert context.assertion_quality_score == 35
+        assert context.mutation_stats is not None
+        assert context.mutation_stats.total_mutations == 127
+        assert context.mutation_stats.killed == 45
 
 
 class TestAgentOutput:
@@ -395,3 +492,129 @@ class TestAgentOutputFormatter:
         agent_output = formatter.format_for_agent(diagnostic, aggregated)
 
         assert len(agent_output.suggestions) == 0
+
+    def test_format_with_mutation_stats(self) -> None:
+        """Test formatting includes mutation statistics."""
+        formatter = AgentOutputFormatter()
+
+        # Create mutation stats
+        mutation_stats = ModelMutationStats(
+            total_mutations=127,
+            killed_count=45,
+            survival_rate=0.65,
+            time_ms=5000,
+        )
+
+        assertion_result = AnalysisResult(
+            engine="assertion_quality",
+            issues=[],
+            metadata={"mutation_stats": mutation_stats},
+        )
+
+        diagnostic = DiagnosticReport(
+            path=".",
+            score=70,
+            results=[assertion_result],
+            summary={"critical": 0, "warning": 0, "info": 0},
+            total_issues=0,
+            mutation_survival_rate=0.65,
+        )
+
+        aggregated = AggregatedIssues(
+            all_issues=[],
+            by_file={},
+            summary={"critical": 0, "warning": 0, "info": 0},
+        )
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
+        assert agent_output.context.assertion_quality_score == 35
+        assert agent_output.context.mutation_stats is not None
+        assert agent_output.context.mutation_stats.total_mutations == 127
+        assert agent_output.context.mutation_stats.killed == 45
+        assert agent_output.context.mutation_stats.survival_rate == 0.65
+
+    def test_format_with_weak_assertion_mutation_evidence(self) -> None:
+        """Test weak-assertion issues include mutation evidence."""
+        formatter = AgentOutputFormatter()
+
+        mutation_stats = ModelMutationStats(
+            total_mutations=127,
+            killed_count=45,
+            survival_rate=0.65,
+            time_ms=5000,
+        )
+
+        assertion_result = AnalysisResult(
+            engine="assertion_quality",
+            issues=[],
+            metadata={"mutation_stats": mutation_stats},
+        )
+
+        weak_assertion_issue = Issue(
+            file_path="tests/test_user.py",
+            line_number=45,
+            rule_id="weak-assertion",
+            rule_name="Weak Assertion",
+            message="Mutation '< changed to <=' at src/user.py:23 was not caught",
+            severity=Severity.WARNING,
+            source=IssueSource.MUTATION_TESTING,
+            recommendation="Strengthen assertion",
+        )
+
+        diagnostic = DiagnosticReport(
+            path=".",
+            score=70,
+            results=[assertion_result],
+            summary={"critical": 0, "warning": 1, "info": 0},
+            total_issues=1,
+        )
+
+        aggregated = AggregatedIssues(
+            all_issues=[weak_assertion_issue],
+            by_file={"tests/test_user.py": [weak_assertion_issue]},
+            summary={"critical": 0, "warning": 1, "info": 0},
+        )
+
+        agent_output = formatter.format_for_agent(diagnostic, aggregated)
+
+        assert len(agent_output.suggestions) == 1
+        suggestion = agent_output.suggestions[0]
+        assert suggestion.rule_id == "weak-assertion"
+        assert suggestion.mutation_evidence is not None
+        assert (
+            suggestion.mutation_evidence.mutation_type == "< changed to <="
+        )  # Extracted from message
+
+    def test_agent_output_to_dict_with_mutation_stats(self) -> None:
+        """Test to_dict includes mutation stats in context."""
+        mutation_stats = MutationStats(
+            total_mutations=127,
+            killed=45,
+            survival_rate=0.65,
+        )
+
+        context = AgentContext(
+            project_path=".",
+            health_score=70,
+            total_issues=1,
+            critical_count=0,
+            warning_count=1,
+            info_count=0,
+            assertion_quality_score=35,
+            mutation_stats=mutation_stats,
+        )
+
+        output = AgentOutput(
+            context=context,
+            suggestions=[],
+            deeplinks={},
+        )
+
+        output_dict = output.to_dict()
+
+        assert output_dict["context"]["assertion_quality_score"] == 35
+        assert "mutation_stats" in output_dict["context"]
+        assert output_dict["context"]["mutation_stats"]["total_mutations"] == 127
+        assert output_dict["context"]["mutation_stats"]["killed"] == 45
+        assert output_dict["context"]["mutation_stats"]["survival_rate"] == 0.65

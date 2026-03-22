@@ -121,3 +121,73 @@ def test_cli_fix_flag_with_output_file(tmp_path: Path) -> None:
     assert "context" in data
     assert "suggestions" in data
     assert "deeplinks" in data
+
+
+def test_cli_mutation_flag() -> None:
+    """Test --mutation flag enables mutation testing."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--mutation"])
+    assert result.exit_code == 0
+    # Note: Actual mutation testing requires mutmut to be installed
+    # This test just verifies the flag is accepted
+
+
+def test_cli_mutation_no_mutation_flag() -> None:
+    """Test --no-mutation flag disables mutation testing."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--no-mutation"])
+    assert result.exit_code == 0
+
+
+def test_cli_mutation_depth_light() -> None:
+    """Test --mutation-depth light option."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--mutation", "--mutation-depth", "light"])
+    assert result.exit_code == 0
+
+
+def test_cli_mutation_depth_standard() -> None:
+    """Test --mutation-depth standard option."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--mutation", "--mutation-depth", "standard"])
+    assert result.exit_code == 0
+
+
+def test_cli_mutation_depth_deep() -> None:
+    """Test --mutation-depth deep option."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--mutation", "--mutation-depth", "deep"])
+    assert result.exit_code == 0
+
+
+def test_cli_mutation_timeout() -> None:
+    """Test --mutation-timeout option with milliseconds."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--mutation", "--mutation-timeout", "3000"])
+    assert result.exit_code == 0
+
+
+def test_cli_mutation_with_json_output() -> None:
+    """Test --mutation flag with --json output."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--mutation", "--json"])
+    assert result.exit_code == 0
+
+    # Parse JSON output
+    output = json.loads(result.output)
+    assert "version" in output
+    assert "path" in output
+    assert "score" in output
+
+
+def test_cli_mutation_with_fix_flag() -> None:
+    """Test --mutation flag with --fix flag."""
+    runner = CliRunner()
+    result = runner.invoke(main, [".", "--mutation", "--fix"])
+    assert result.exit_code == 0
+
+    # Parse JSON output
+    output = json.loads(result.output)
+    assert "context" in output
+    assert "suggestions" in output
+    assert "deeplinks" in output

@@ -9,7 +9,7 @@ import click
 
 from pytest_doctor import __version__
 from pytest_doctor.agent_output import AgentOutputFormatter
-from pytest_doctor.aggregation import AggregatedIssues, ResultsAggregator
+from pytest_doctor.aggregation import ResultsAggregator
 from pytest_doctor.analyzers import (
     AssertionQualityAnalyzer,
     GapAnalyzer,
@@ -20,60 +20,9 @@ from pytest_doctor.analyzers import (
 from pytest_doctor.config import load_config
 from pytest_doctor.git_utils import GitDiffHandler
 from pytest_doctor.models import AnalysisResult, DiagnosticReport
+from pytest_doctor.output import render_report
 from pytest_doctor.parallel import run_analyses_parallel
 from pytest_doctor.scoring import HealthScorer
-
-
-def _print_report(
-    diagnostic: DiagnosticReport, aggregated: AggregatedIssues, verbose: bool
-) -> None:
-    """Print a human-readable diagnostic report."""
-    # Print header with score
-    click.echo("\n" + "=" * 60)
-    click.echo("pytest-doctor Diagnostic Report")
-    click.echo("=" * 60)
-
-    # Print score with color coding
-    score = diagnostic.score
-    if score >= 75:
-        status = "✓ GOOD"
-    elif score >= 50:
-        status = "⚠ NEEDS WORK"
-    else:
-        status = "✗ CRITICAL"
-
-    click.echo(f"\nHealth Score: {score}/100 [{status}]")
-
-    # Print summary
-    click.echo("\nSummary:")
-    click.echo(f"  Critical: {aggregated.summary['critical']}")
-    click.echo(f"  Warning:  {aggregated.summary['warning']}")
-    click.echo(f"  Info:     {aggregated.summary['info']}")
-    click.echo(f"  Total:    {len(aggregated.all_issues)}")
-
-    # Print issues by file if there are any
-    if aggregated.all_issues:
-        click.echo("\nFindings:")
-        click.echo("-" * 60)
-
-        for file_path, issues in aggregated.by_file.items():
-            click.echo(f"\n{file_path}")
-            for issue in issues:
-                severity_symbol = {
-                    "critical": "✗",
-                    "warning": "⚠",
-                    "info": "i",
-                }.get(issue.severity.value, "•")
-
-                rule_info = f"[{issue.rule_id}]" if issue.rule_id else ""
-                click.echo(
-                    f"  {severity_symbol} Line {issue.line_number}: {issue.message} {rule_info}"
-                )
-
-                if verbose and issue.recommendation:
-                    click.echo(f"    → {issue.recommendation}")
-
-    click.echo("\n" + "=" * 60 + "\n")
 
 
 @click.command()
@@ -84,6 +33,23 @@ def _print_report(
 @click.option("--json", "output_json", is_flag=True, help="Output results in JSON format")
 @click.option("--output", type=click.Path(), default=None, help="Write JSON output to file")
 @click.option("--version", is_flag=True, help="Show version and exit")
+@click.option(
+    "--mutation/--no-mutation",
+    default=False,
+    help="Enable mutation testing to detect weak assertions (slower)",
+)
+@click.option(
+    "--mutation-depth",
+    type=click.Choice(["light", "standard", "deep"]),
+    default="standard",
+    help="Depth of mutation testing (light=fast, deep=thorough)",
+)
+@click.option(
+    "--mutation-timeout",
+    type=int,
+    default=5000,
+    help="Timeout per mutation test run (milliseconds)",
+)
 def main(
     path: str,
     verbose: bool,
@@ -92,6 +58,9 @@ def main(
     output_json: bool,
     output: Optional[str],
     version: bool,
+    mutation: bool,
+    mutation_depth: str,
+    mutation_timeout: int,
 ) -> None:
     """
     Diagnose weak or broken pytest suites.
@@ -106,6 +75,12 @@ def main(
 
     # Load configuration from files and merge with CLI flags
     config = load_config(path, verbose=verbose)
+
+    # Apply mutation testing CLI flags
+    if mutation:
+        config.assertion_quality = True
+    config.mutation_depth = mutation_depth
+    config.mutation_timeout_ms = mutation_timeout
 
     # Show initial message if not JSON output or fix flag
     if not (output_json or output or fix):
@@ -202,7 +177,7 @@ def main(
         score = scorer.calculate_score([r for r in results if r is not None])
 
         # Extract mutation stats if available
-        mutation_survival_rate: float | None = None
+        mutation_survival_rate: Optional[float] = None
         for result in results:
             if result and result.engine == "assertion_quality":
                 if "mutation_stats" in result.metadata:
@@ -257,7 +232,7 @@ def main(
                 click.echo(output_str)
         else:
             # Human-readable output
-            _print_report(diagnostic, aggregated, config.verbose)
+            render_report(diagnostic, aggregated, config.verbose)
 
     except Exception as e:
         if config.verbose:
