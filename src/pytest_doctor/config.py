@@ -96,6 +96,9 @@ class Config:
     dead_code: bool = True
     test_analysis: bool = True
     coverage_gaps: bool = True
+    assertion_quality: bool = False
+    mutation_depth: str = "standard"
+    mutation_timeout_ms: int = 5000
     verbose: bool = False
 
     @classmethod
@@ -103,12 +106,21 @@ class Config:
         """Create from dictionary."""
         if not data:
             return cls()
+
+        # Validate mutation_depth
+        mutation_depth = data.get("mutationDepth", "standard")
+        if mutation_depth not in ("light", "standard", "deep"):
+            mutation_depth = "standard"
+
         return cls(
             ignore=IgnoreConfig.from_dict(data.get("ignore")),
             lint=data.get("lint", True),
             dead_code=data.get("deadCode", True),
             test_analysis=data.get("testAnalysis", True),
             coverage_gaps=data.get("coverageGaps", True),
+            assertion_quality=data.get("assertionQuality", False),
+            mutation_depth=mutation_depth,
+            mutation_timeout_ms=data.get("mutationTimeoutMs", 5000),
             verbose=data.get("verbose", False),
         )
 
@@ -123,6 +135,9 @@ class Config:
             "deadCode": self.dead_code,
             "testAnalysis": self.test_analysis,
             "coverageGaps": self.coverage_gaps,
+            "assertionQuality": self.assertion_quality,
+            "mutationDepth": self.mutation_depth,
+            "mutationTimeoutMs": self.mutation_timeout_ms,
             "verbose": self.verbose,
         }
 
@@ -176,6 +191,10 @@ def load_config(
                 lint=pyproject_config.lint,
                 dead_code=pyproject_config.dead_code,
                 test_analysis=pyproject_config.test_analysis,
+                coverage_gaps=pyproject_config.coverage_gaps,
+                assertion_quality=pyproject_config.assertion_quality,
+                mutation_depth=pyproject_config.mutation_depth,
+                mutation_timeout_ms=pyproject_config.mutation_timeout_ms,
                 verbose=pyproject_config.verbose or config.verbose,
             )
 
