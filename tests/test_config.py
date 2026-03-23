@@ -76,22 +76,28 @@ class TestConfig:
         assert len(config.ignore.files) > 10
 
     def test_config_from_dict(self) -> None:
-        """Test creating Config from dictionary."""
+        """Test creating Config from dictionary with flags."""
         data = {
             "lint": False,
             "deadCode": False,
             "testAnalysis": True,
             "verbose": True,
-            "ignore": {
-                "rules": ["E501"],
-                "files": ["tests/**"],
-            },
         }
         config = Config.from_dict(data)
         assert config.lint is False
         assert config.dead_code is False
         assert config.test_analysis is True
         assert config.verbose is True
+
+    def test_config_from_dict_with_ignore(self) -> None:
+        """Test creating Config from dictionary with ignore patterns."""
+        data = {
+            "ignore": {
+                "rules": ["E501"],
+                "files": ["tests/**"],
+            },
+        }
+        config = Config.from_dict(data)
         assert config.ignore.rules == ["E501"]
         # Should include both user patterns and defaults
         assert "tests/**" in config.ignore.files
@@ -141,6 +147,64 @@ class TestConfig:
         assert result["ignore"]["rules"] == ["E501"]
         assert "tests/**" in result["ignore"]["files"]
         assert ".venv/**" in result["ignore"]["files"]
+
+    def test_config_individual_flags(self) -> None:
+        """Test setting individual config flags."""
+        config = Config(
+            lint=False,
+            dead_code=False,
+            test_analysis=False,
+            coverage_gaps=False,
+            verbose=True,
+        )
+        assert config.lint is False
+        assert config.dead_code is False
+        assert config.test_analysis is False
+        assert config.coverage_gaps is False
+        assert config.verbose is True
+
+    def test_config_from_dict_partial_data(self) -> None:
+        """Test creating Config from dict with partial data."""
+        data = {
+            "lint": False,
+        }
+        config = Config.from_dict(data)
+        assert config.lint is False
+        assert config.dead_code is True  # default
+        assert config.test_analysis is True  # default
+        assert config.verbose is False  # default
+
+    def test_config_from_dict_with_all_flags_true(self) -> None:
+        """Test Config with all flags set to True."""
+        data = {
+            "lint": True,
+            "deadCode": True,
+            "testAnalysis": True,
+            "coverageGaps": True,
+            "verbose": True,
+        }
+        config = Config.from_dict(data)
+        assert config.lint is True
+        assert config.dead_code is True
+        assert config.test_analysis is True
+        assert config.coverage_gaps is True
+        assert config.verbose is True
+
+    def test_config_from_dict_with_all_flags_false(self) -> None:
+        """Test Config with all flags set to False."""
+        data = {
+            "lint": False,
+            "deadCode": False,
+            "testAnalysis": False,
+            "coverageGaps": False,
+            "verbose": False,
+        }
+        config = Config.from_dict(data)
+        assert config.lint is False
+        assert config.dead_code is False
+        assert config.test_analysis is False
+        assert config.coverage_gaps is False
+        assert config.verbose is False
 
 
 class TestLoadConfig:

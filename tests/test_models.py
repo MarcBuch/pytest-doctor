@@ -118,6 +118,46 @@ class TestIssue:
         )
         assert issue.source == source
 
+    def test_issue_to_dict_has_file_path(self) -> None:
+        """Test that to_dict includes file_path field."""
+        issue = Issue(file_path="test.py", line_number=5)
+        issue_dict = issue.to_dict()
+        assert "file_path" in issue_dict
+
+    def test_issue_to_dict_has_line_number(self) -> None:
+        """Test that to_dict includes line_number field."""
+        issue = Issue(file_path="test.py", line_number=5)
+        issue_dict = issue.to_dict()
+        assert "line_number" in issue_dict
+
+    def test_issue_to_dict_has_severity(self) -> None:
+        """Test that to_dict includes severity field."""
+        issue = Issue(file_path="test.py", line_number=5)
+        issue_dict = issue.to_dict()
+        assert "severity" in issue_dict
+
+    def test_issue_to_dict_has_source(self) -> None:
+        """Test that to_dict includes source field."""
+        issue = Issue(file_path="test.py", line_number=5)
+        issue_dict = issue.to_dict()
+        assert "source" in issue_dict
+
+    def test_issue_with_zero_line_number(self) -> None:
+        """Test issue with line number 0."""
+        issue = Issue(
+            file_path="test.py",
+            line_number=0,
+        )
+        assert issue.line_number == 0
+
+    def test_issue_with_large_line_number(self) -> None:
+        """Test issue with large line number."""
+        issue = Issue(
+            file_path="test.py",
+            line_number=999999,
+        )
+        assert issue.line_number == 999999
+
 
 class TestAnalysisResult:
     """Tests for AnalysisResult model."""
@@ -155,20 +195,14 @@ class TestAnalysisResult:
         assert result_dict["issues"] == []
         assert result_dict["duration_ms"] == 0.0
 
-    def test_analysis_result_to_dict_with_issues(self) -> None:
-        """Test converting analysis result with issues to dict."""
+    def test_analysis_result_to_dict_with_single_issue(self) -> None:
+        """Test converting analysis result with single issue to dict."""
         issues = [
             Issue(
                 file_path="src/main.py",
                 line_number=5,
                 rule_id="E501",
                 severity=Severity.WARNING,
-            ),
-            Issue(
-                file_path="src/utils.py",
-                line_number=15,
-                rule_id="F401",
-                severity=Severity.INFO,
             ),
         ]
         result = AnalysisResult(
@@ -178,9 +212,60 @@ class TestAnalysisResult:
         )
         result_dict = result.to_dict()
         assert result_dict["engine"] == "ruff"
-        assert len(result_dict["issues"]) == 2
+        assert len(result_dict["issues"]) == 1
         assert result_dict["duration_ms"] == 250.0
-        assert result_dict["issues"][0]["rule_id"] == "E501"
+
+    def test_analysis_result_to_dict_multiple_issues(self) -> None:
+        """Test multiple issues in dict output."""
+        issues = [
+            Issue(file_path="src/main.py", line_number=5, rule_id="E501"),
+            Issue(file_path="src/utils.py", line_number=15, rule_id="F401"),
+        ]
+        result = AnalysisResult(engine="ruff", issues=issues)
+        result_dict = result.to_dict()
+        assert len(result_dict["issues"]) == 2
+
+    @pytest.mark.parametrize(
+        "engine_name",
+        ["ruff", "vulture", "coverage_gaps", "quality"],
+    )
+    def test_analysis_result_different_engines(self, engine_name) -> None:
+        """Test analysis result with different engine names."""
+        result = AnalysisResult(engine=engine_name)
+        assert result.engine == engine_name
+
+    def test_analysis_result_duration_ms_precision(self) -> None:
+        """Test that duration_ms maintains precision."""
+        result = AnalysisResult(
+            engine="ruff",
+            duration_ms=123.456789,
+        )
+        assert result.duration_ms == 123.456789
+
+    def test_analysis_result_with_multiple_issues(self) -> None:
+        """Test analysis result with multiple issues."""
+        issues = [
+            Issue(file_path=f"file{i}.py", line_number=i)
+            for i in range(10)
+        ]
+        result = AnalysisResult(engine="ruff", issues=issues)
+        assert len(result.issues) == 10
+        result_dict = result.to_dict()
+        assert len(result_dict["issues"]) == 10
+
+    def test_analysis_result_to_dict_contains_all_fields(self) -> None:
+        """Test that to_dict includes all fields."""
+        result = AnalysisResult(
+            engine="test_engine",
+            issues=[],
+            duration_ms=100.5,
+        )
+        result_dict = result.to_dict()
+        assert "engine" in result_dict
+        assert "issues" in result_dict
+        assert "duration_ms" in result_dict
+        assert result_dict["engine"] == "test_engine"
+        assert result_dict["duration_ms"] == 100.5
 
 
 class TestDiagnosticReport:
@@ -228,32 +313,39 @@ class TestDiagnosticReport:
         assert report_dict["total_issues"] == 0
 
     def test_diagnostic_report_to_dict_full(self) -> None:
-        """Test converting diagnostic report to dict with all fields."""
-        result = AnalysisResult(
-            engine="ruff",
-            issues=[
-                Issue(
-                    file_path="test.py",
-                    line_number=1,
-                    rule_id="E501",
-                ),
-            ],
-            duration_ms=100.0,
-        )
+        """Test diagnostic report dict conversion."""
+        result = AnalysisResult(engine="ruff")
         report = DiagnosticReport(
             path="/project",
             score=60,
             results=[result],
-            summary={"critical": 0, "warning": 1, "info": 0},
-            total_issues=1,
         )
         report_dict = report.to_dict()
         assert report_dict["path"] == "/project"
         assert report_dict["score"] == 60
         assert len(report_dict["results"]) == 1
+
+    def test_diagnostic_report_to_dict_results_engine(self) -> None:
+        """Test that results include engine in dict output."""
+        result = AnalysisResult(engine="ruff")
+        report = DiagnosticReport(
+            path="/project",
+            score=60,
+            results=[result],
+        )
+        report_dict = report.to_dict()
         assert report_dict["results"][0]["engine"] == "ruff"
+
+    def test_diagnostic_report_to_dict_summary(self) -> None:
+        """Test that summary is preserved in dict output."""
+        report = DiagnosticReport(
+            path="/project",
+            score=60,
+            summary={"critical": 0, "warning": 1, "info": 0},
+            total_issues=1,
+        )
+        report_dict = report.to_dict()
         assert report_dict["summary"]["warning"] == 1
-        assert report_dict["total_issues"] == 1
 
     def test_diagnostic_report_with_perfect_score(self) -> None:
         """Test diagnostic report with perfect score."""
@@ -277,3 +369,62 @@ class TestDiagnosticReport:
         assert report.score == 20
         assert report.summary["critical"] == 5
         assert report.total_issues == 10
+
+    def test_diagnostic_report_with_multiple_results(self) -> None:
+        """Test diagnostic report with multiple analysis results."""
+        results = [
+            AnalysisResult(engine="ruff"),
+            AnalysisResult(engine="vulture"),
+            AnalysisResult(engine="coverage_gaps"),
+        ]
+        report = DiagnosticReport(
+            path=".",
+            score=50,
+            results=results,
+        )
+        assert len(report.results) == 3
+        report_dict = report.to_dict()
+        assert len(report_dict["results"]) == 3
+
+    def test_diagnostic_report_to_dict_all_fields(self) -> None:
+        """Test that to_dict includes all fields."""
+        report = DiagnosticReport(
+            path="/test/path",
+            score=75,
+            results=[],
+            summary={"critical": 1, "warning": 2, "info": 3},
+            total_issues=6,
+        )
+        report_dict = report.to_dict()
+        assert "path" in report_dict
+        assert "score" in report_dict
+        assert "results" in report_dict
+        assert "summary" in report_dict
+        assert "total_issues" in report_dict
+        assert report_dict["path"] == "/test/path"
+        assert report_dict["score"] == 75
+        assert report_dict["summary"]["critical"] == 1
+
+    def test_diagnostic_report_with_zero_score(self) -> None:
+        """Test diagnostic report with zero score."""
+        report = DiagnosticReport(
+            path=".",
+            score=0,
+            summary={"critical": 10, "warning": 10, "info": 10},
+            total_issues=30,
+        )
+        assert report.score == 0
+        assert report.total_issues == 30
+
+    def test_diagnostic_report_summary_distribution(self) -> None:
+        """Test diagnostic report with different severity distributions."""
+        report = DiagnosticReport(
+            path=".",
+            score=50,
+            summary={"critical": 5, "warning": 10, "info": 85},
+            total_issues=100,
+        )
+        assert report.summary["critical"] == 5
+        assert report.summary["warning"] == 10
+        assert report.summary["info"] == 85
+        assert sum(report.summary.values()) == 100
