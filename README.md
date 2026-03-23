@@ -48,11 +48,84 @@ pytest-doctor . --output results.json
 pytest-doctor . --fix
 ```
 
+## Mutation Testing with Cosmic-Ray
+
+pytest-doctor can analyze assertion quality using **cosmic-ray** for mutation testing. This feature detects weak or ineffective assertions by running mutations against your code and checking if your tests catch them.
+
+### Prerequisites
+
+Cosmic-ray must be installed:
+
+```bash
+uv pip install cosmic-ray>=8.4.4
+```
+
+Or as part of pytest-doctor development:
+
+```bash
+uv pip install pytest-doctor[mutation]
+```
+
+### Usage
+
+Enable mutation testing with the `--mutation` flag:
+
+```bash
+# Analyze assertion quality using mutation testing
+pytest-doctor . --mutation
+
+# Verbose mode shows mutation statistics
+pytest-doctor . --mutation --verbose
+
+# JSON output includes mutation stats
+pytest-doctor . --mutation --json
+```
+
+### What It Detects
+
+Cosmic-ray runs mutations on your code and checks if your tests detect them:
+
+- **Survived mutations**: Tests didn't catch the change → weak assertions
+- **Killed mutations**: Tests failed when code was changed → good assertions
+- **Survival rate**: Percentage of mutations your tests miss
+
+### Output
+
+With mutation testing enabled, the diagnostic report includes:
+
+```
+Mutation Testing Results:
+  Total mutations:  145
+  Killed (good):   103
+  Survived (weak):  42
+  Survival rate:    28.9% (lower is better)
+```
+
+Issues are flagged for survived mutations with recommendations to strengthen assertions.
+
+### Configuration
+
+Control mutation testing behavior in `pytest-doctor.config.json` or `pyproject.toml`:
+
+```toml
+[tool.pytest-doctor]
+assertion-quality = true          # Enable mutation testing (default: true)
+mutation-timeout-ms = 300000      # Timeout per file in ms (default: 5 min)
+```
+
+### Requirements
+
+- Cosmic-ray 8.4.4 or later
+- A test suite that runs with pytest
+- Code with Python 3.7+ syntax
+
 ## CLI Flags
 
 - **PATH**: Directory to scan (default: current directory)
 - **--verbose, -v**: Enable verbose output with detailed recommendations
 - **--fix**: Generate agent-friendly output with structured recommendations and deeplinks. Creates `.pytest-doctor/diagnostics.json` with complete analysis, context, and navigation links
+- **--mutation**: Enable mutation testing with cosmic-ray to analyze assertion quality
+- **--no-mutation**: Disable mutation testing (overrides config)
 - **--diff REF**: Scan only files changed compared to a git reference (e.g., `main`, `HEAD~1`)
 - **--json**: Output complete diagnostics in JSON format to stdout
 - **--output FILE**: Write JSON diagnostics to the specified file
