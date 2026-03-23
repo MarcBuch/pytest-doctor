@@ -34,7 +34,7 @@ class AssertionQualityAnalyzer:
         """
         Analyze assertion quality through mutation testing.
 
-        Runs mutmut on the specified path, analyzes mutations to identify
+        Runs cosmic-ray on the specified path, analyzes mutations to identify
         weak assertions, and returns the results.
 
         Args:
@@ -63,9 +63,11 @@ class AssertionQualityAnalyzer:
             integrator = MutationIntegrator()
             mutations = integrator.run_mutations(str(path_obj), timeout_ms=timeout_ms)
 
-            # If no mutations (mutmut not available or no tests), return empty result
+            # If no mutations (cosmic-ray not available or no tests), return empty result
             if not mutations:
-                logger.debug(f"No mutations found for {path} - mutmut may not be installed")
+                logger.debug(
+                    f"No mutations found for {path} - cosmic-ray may not be installed or project has no testable code"
+                )
                 return result
 
             # Analyze mutations to find weak assertions
